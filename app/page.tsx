@@ -24,6 +24,10 @@ function HomeContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<"admin" | "user" | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [activeTasks, setActiveTasks] = useState<any[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const URL_PUBLIC = process.env.NEXT_PUBLIC_URL;
   const [formData, setFormData] = useState({
     proyecto: "",
@@ -34,6 +38,14 @@ function HomeContent() {
   });
 
   const [errors, setErrors] = useState<any>({});
+
+  // Initialize tasks from localStorage
+  useEffect(() => {
+    const savedActive = localStorage.getItem("activeTasks");
+    const savedCompleted = localStorage.getItem("completedTasks");
+    if (savedActive) setActiveTasks(JSON.parse(savedActive));
+    if (savedCompleted) setCompletedTasks(JSON.parse(savedCompleted));
+  }, []);
 
   // Capture params from URL and sync with localStorage
   useEffect(() => {
@@ -109,20 +121,47 @@ function HomeContent() {
     const result = schema.safeParse(formData);
     if (result.success) {
       if (userRole === "user") {
-        const reportData = {
+        if (activeTasks.length > 0) {
+          alert("Ya tienes una tarea en progreso. Termina la actual antes de iniciar una nueva.");
+          return;
+        }
+        const newTask = {
+          id: Math.floor(Math.random() * 1000),
           proyectoID: formData.proyecto,
           tareaID: formData.tarea,
           empleado: formData.empleado,
           horas: formData.horas,
           descripcion: formData.descripcion,
-          timestamp: new Date().toISOString()
         };
-        console.log("Reporte JSON a enviar:", JSON.stringify(reportData, null, 2));
-        alert("datos enviados:" + JSON.stringify(reportData, null, 2));
+        const updatedTasks = [...activeTasks, newTask];
+        setActiveTasks(updatedTasks);
+        localStorage.setItem("activeTasks", JSON.stringify(updatedTasks));
+        console.log("Tarea agregada:", JSON.stringify(updatedTasks));
+        alert("Tarea agregada exitosamente"+JSON.stringify(updatedTasks));
+        setShowForm(false);
       }
       setIsSubmitted(true);
       setTimeout(() => setIsSubmitted(false), 3000);
     }
+  };
+
+  const handleFinishTask = (taskId: number) => {
+    const taskToFinish = activeTasks.find(t => t.id === taskId);
+    if (!taskToFinish) return;
+
+    const finishedTask = {
+      ...taskToFinish,
+      finalizado: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+    };
+
+    const updatedActive = activeTasks.filter(t => t.id !== taskId);
+    const updatedCompleted = [finishedTask, ...completedTasks];
+
+    setActiveTasks(updatedActive);
+    setCompletedTasks(updatedCompleted);
+    
+    localStorage.setItem("activeTasks", JSON.stringify(updatedActive));
+    localStorage.setItem("completedTasks", JSON.stringify(updatedCompleted));
   };
 
   const isValid = useMemo(() => {
@@ -193,58 +232,194 @@ function HomeContent() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-6">
-              {userRole === "admin" ? (
-                <>
-                  <Field id="proyecto" label="Proyecto ID" value={formData.proyecto} error={errors.proyecto} onChange={handleChange} />
-                  <Field id="tarea" label="Tarea ID" value={formData.tarea} error={errors.tarea} onChange={handleChange} />
-                </>
-              ) : (
-                <>
-                  {missingIds && (
-                    <div className="rounded-xl bg-amber-50 p-4 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-                      <p className="text-sm text-amber-800 dark:text-amber-400 font-medium">
-                        ⚠️ Se requiere proyectoID y tareaID para enviar reportes. Por favor, acceda mediante un código QR válido.
+            {userRole === "admin" ? (
+              <form onSubmit={handleSubmit} className="grid gap-6">
+                <Field id="proyecto" label="Proyecto ID" value={formData.proyecto} error={errors.proyecto} onChange={handleChange} />
+                <Field id="tarea" label="Tarea ID" value={formData.tarea} error={errors.tarea} onChange={handleChange} />
+                <button
+                  type="submit"
+                  disabled={!isValid || isSubmitted}
+                  className={`h-12 w-full rounded-xl font-semibold transition-all ${
+                    isSubmitted ? "bg-green-500 text-white" : 
+                    "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                  } disabled:opacity-50`}
+                >
+                  {isSubmitted ? "¡Código Generado!" : "Generar QR"}
+                </button>
+              </form>
+            ) : !showForm ? (
+              <div className="space-y-6">
+                <button 
+                  onClick={() => activeTasks.length === 0 && setShowForm(true)}
+                  disabled={activeTasks.length > 0}
+                  className={`group flex w-full items-center justify-between rounded-3xl border p-6 shadow-sm transition-all ${
+                    activeTasks.length > 0 
+                      ? "border-zinc-100 bg-zinc-50 cursor-not-allowed opacity-60 dark:border-zinc-800 dark:bg-zinc-800/20" 
+                      : "border-zinc-100 bg-white hover:border-zinc-200 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-full ${activeTasks.length > 0 ? "bg-zinc-200 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600" : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    </div>
+                    <div className="text-left">
+                      <h3 className={`text-lg font-bold ${activeTasks.length > 0 ? "text-zinc-400 dark:text-zinc-600" : "text-zinc-900 dark:text-zinc-100"}`}>Registrar Tarea</h3>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-500">
+                        {activeTasks.length > 0 ? "Termina tu tarea actual primero" : "Iniciar un nuevo trabajo manual"}
                       </p>
                     </div>
-                  )}
-                  <Field id="empleado" label="Usuario ID" value={formData.empleado} error={errors.empleado} onChange={handleChange} />
-                  <Field 
-                    id="horas" 
-                    label="Hora de marcado" 
-                    value={formData.horas} 
-                    error={errors.horas} 
-                    onChange={handleChange} 
-                    readOnly={true}
-                    customClassName="bg-zinc-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-80"
-                  />
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Descripción</label>
-                    <textarea
-                      name="descripcion"
-                      rows={3}
-                      value={formData.descripcion}
-                      onChange={handleChange}
-                      className={`flex w-full max-h-32 min-h-32 rounded-xl border bg-transparent px-4 py-2 text-sm focus:outline-none focus:ring-1 ${
-                        errors.descripcion ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black dark:border-zinc-800 dark:focus:border-white"
-                      }`}
-                    />
-                    {errors.descripcion && <p className="text-xs text-red-500">{errors.descripcion}</p>}
                   </div>
-                  <button
-                    type="submit"
-                    disabled={!isValid || isSubmitted || missingIds}
-                    className={`h-12 w-full rounded-xl font-semibold transition-all ${
-                      isSubmitted ? "bg-green-500 text-white" : 
-                      missingIds ? "bg-zinc-200 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-500" :
-                      "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                    } disabled:opacity-50`}
+                  {!activeTasks.length && <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300 transition-transform group-hover:translate-x-1 dark:text-zinc-600"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>}
+                </button>
+
+                <div className="space-y-4">
+                  <div className="flex border-b border-zinc-100 dark:border-zinc-800">
+                    <button 
+                      onClick={() => setActiveTab("active")}
+                      className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${activeTab === "active" ? "border-black text-black dark:border-white dark:text-white" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-400"}`}
+                    >
+                      EN PROGRESO ({activeTasks.length})
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab("history")}
+                      className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${activeTab === "history" ? "border-black text-black dark:border-white dark:text-white" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-400"}`}
+                    >
+                      HISTORIAL ({completedTasks.length})
+                    </button>
+                  </div>
+                  
+                  {activeTab === "active" ? (
+                    activeTasks.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-zinc-200 p-8 text-center dark:border-zinc-800">
+                        <p className="text-sm text-zinc-400">No hay tareas activas</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3">
+                        {activeTasks.map((task) => (
+                          <div key={task.id} className="relative overflow-hidden rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="absolute left-0 top-0 h-full w-1.5 bg-green-500" />
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{task.descripcion}</h3>
+                                  <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-600 dark:bg-green-900/20 dark:text-green-400">ACTIVO</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="rounded-lg bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                    ID: {task.tareaID}
+                                  </div>
+                                  <div className="rounded-lg bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                    Proy: {task.proyectoID}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-500">
+                                  <span className="text-xs">Inicio: {task.horas}</span>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => handleFinishTask(task.id)}
+                                className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
+                              >
+                                <div className="h-3 w-3 rounded-sm bg-red-600 dark:bg-red-400" />
+                                Terminar
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    completedTasks.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-zinc-200 p-8 text-center dark:border-zinc-800">
+                        <p className="text-sm text-zinc-400">No hay tareas terminadas</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3">
+                        {completedTasks.map((task) => (
+                          <div key={task.id} className="relative overflow-hidden rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 opacity-80">
+                            <div className="absolute left-0 top-0 h-full w-1.5 bg-zinc-300 dark:bg-zinc-700" />
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{task.descripcion}</h3>
+                                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500">FINALIZADO</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="rounded-lg bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                    ID: {task.tareaID}
+                                  </div>
+                                  <div className="rounded-lg bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                    Proy: {task.proyectoID}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-500">
+                                  <span className="text-xs">{task.horas} — {task.finalizado}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )
+                  }
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="grid gap-6">
+                <div className="flex items-center justify-between mb-2">
+                  <button 
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white"
                   >
-                    {isSubmitted ? "¡Datos Enviados!" : missingIds ? "Reporte Bloqueado" : "Enviar Reporte"}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                    Volver
                   </button>
-                </>
-              )}
-            </form>
+                </div>
+                {missingIds && (
+                  <div className="rounded-xl bg-amber-50 p-4 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+                    <p className="text-sm text-amber-800 dark:text-amber-400 font-medium">
+                      ⚠️ Se requiere proyectoID y tareaID para enviar reportes. Por favor, acceda mediante un código QR válido.
+                    </p>
+                  </div>
+                )}
+                <Field id="empleado" label="Usuario ID" value={formData.empleado} error={errors.empleado} onChange={handleChange} />
+                <Field 
+                  id="horas" 
+                  label="Hora de marcado" 
+                  value={formData.horas} 
+                  error={errors.horas} 
+                  onChange={handleChange} 
+                  readOnly={true}
+                  customClassName="bg-zinc-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-80"
+                />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Descripción</label>
+                  <textarea
+                    name="descripcion"
+                    rows={3}
+                    value={formData.descripcion}
+                    onChange={handleChange}
+                    className={`flex w-full max-h-32 min-h-32 rounded-xl border bg-transparent px-4 py-2 text-sm focus:outline-none focus:ring-1 ${
+                      errors.descripcion ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black dark:border-zinc-800 dark:focus:border-white"
+                    }`}
+                  />
+                  {errors.descripcion && <p className="text-xs text-red-500">{errors.descripcion}</p>}
+                </div>
+                <button
+                  type="submit"
+                  disabled={!isValid || isSubmitted || missingIds}
+                  className={`h-12 w-full rounded-xl font-semibold transition-all ${
+                    isSubmitted ? "bg-green-500 text-white" : 
+                    missingIds ? "bg-zinc-200 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-500" :
+                    "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                  } disabled:opacity-50`}
+                >
+                  {isSubmitted ? "¡Datos Enviados!" : missingIds ? "Reporte Bloqueado" : "Enviar Reporte"}
+                </button>
+              </form>
+            )}
           </div>
           <div className="bg-zinc-50 px-8 py-4 dark:bg-zinc-800/50">
             <p className="text-center text-xs text-zinc-400">QR Generator Studio • {userRole === "admin" ? "Admin" : "User"}</p>
