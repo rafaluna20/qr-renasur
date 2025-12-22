@@ -40,6 +40,11 @@ export default function RegisterPage() {
     }
 
     // Simulated Registration
+    if (formData.role === "admin" && formData.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+      setErrors({ email: "Solo el correo autorizado puede registrarse como administrador" });
+      return;
+    }
+
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("userName", formData.name);
     localStorage.setItem("userEmail", formData.email);

@@ -24,10 +24,10 @@ function HomeContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<"admin" | "user" | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
-
+  const URL_PUBLIC = process.env.NEXT_PUBLIC_URL;
   const [formData, setFormData] = useState({
-    proyecto: "25",
-    tarea: "21",
+    proyecto: "",
+    tarea: "",
     empleado: "5",
     horas: "13:45",
     descripcion: "Avance de obra en sector 4",
@@ -118,18 +118,29 @@ function HomeContent() {
           timestamp: new Date().toISOString()
         };
         console.log("Reporte JSON a enviar:", JSON.stringify(reportData, null, 2));
+        alert("datos enviados:" + JSON.stringify(reportData, null, 2));
       }
       setIsSubmitted(true);
       setTimeout(() => setIsSubmitted(false), 3000);
     }
   };
 
-  const isValid = useMemo(() => schema.safeParse(formData).success, [formData, schema]);
+  const isValid = useMemo(() => {
+    const baseValid = schema.safeParse(formData).success;
+    if (userRole === "user") {
+      return baseValid && !!formData.proyecto && !!formData.tarea;
+    }
+    return baseValid;
+  }, [formData, schema, userRole]);
+
+  const missingIds = useMemo(() => {
+    return userRole === "user" && (!formData.proyecto || !formData.tarea);
+  }, [userRole, formData.proyecto, formData.tarea]);
 
   const qrData = useMemo(() => {
     if (userRole === "admin" && isValid) {
       const { proyecto, tarea } = formData;
-      return `https://tesis-proyecto-delta.vercel.app/?proyectoID=${proyecto}&tareaID=${tarea}`;
+      return `${URL_PUBLIC}/?proyectoID=${proyecto}&tareaID=${tarea}`;
     }
     return "";
   }, [formData, isValid, userRole]);
@@ -190,6 +201,13 @@ function HomeContent() {
                 </>
               ) : (
                 <>
+                  {missingIds && (
+                    <div className="rounded-xl bg-amber-50 p-4 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+                      <p className="text-sm text-amber-800 dark:text-amber-400 font-medium">
+                        ⚠️ Se requiere proyectoID y tareaID para enviar reportes. Por favor, acceda mediante un código QR válido.
+                      </p>
+                    </div>
+                  )}
                   <Field id="empleado" label="Usuario ID" value={formData.empleado} error={errors.empleado} onChange={handleChange} />
                   <Field 
                     id="horas" 
@@ -215,12 +233,14 @@ function HomeContent() {
                   </div>
                   <button
                     type="submit"
-                    disabled={!isValid || isSubmitted}
+                    disabled={!isValid || isSubmitted || missingIds}
                     className={`h-12 w-full rounded-xl font-semibold transition-all ${
-                      isSubmitted ? "bg-green-500 text-white" : "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                      isSubmitted ? "bg-green-500 text-white" : 
+                      missingIds ? "bg-zinc-200 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-500" :
+                      "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                     } disabled:opacity-50`}
                   >
-                    {isSubmitted ? "¡Datos Enviados!" : "Enviar Reporte"}
+                    {isSubmitted ? "¡Datos Enviados!" : missingIds ? "Reporte Bloqueado" : "Enviar Reporte"}
                   </button>
                 </>
               )}

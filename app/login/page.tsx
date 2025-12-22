@@ -21,6 +21,9 @@ function LoginContent() {
   });
   const [errors, setErrors] = useState<{ email?: string; password?: string; role?: string }>({});
 
+  const EMAIL_ADMIN = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const PASSWORD_ADMIN = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
   useEffect(() => {
     const pID = searchParams.get("proyectoID");
     const tID = searchParams.get("tareaID");
@@ -42,6 +45,15 @@ function LoginContent() {
     }
 
     // Simulated Login
+    if (formData.role === "admin") {
+      console.log(EMAIL_ADMIN);
+      console.log(PASSWORD_ADMIN);
+      if (formData.email !== EMAIL_ADMIN || formData.password !== PASSWORD_ADMIN) {
+        setErrors({ email: "Credenciales de administrador incorrectas" });
+        return;
+      }
+    }
+
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("userEmail", formData.email);
     localStorage.setItem("userRole", formData.role);
