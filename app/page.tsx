@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
+import QRScannerModal from "@/components/QRScannerModal";
 
 const adminSchema = z.object({
   proyecto: z.string().min(1, "El ID del proyecto es requerido"),
@@ -12,7 +13,6 @@ const adminSchema = z.object({
 const userSchema = z.object({
   empleado: z.string().min(1, "El ID del empleado es requerido"),
   horas: z.string().min(1, "La hora de finalización es requerida"),
-  descripcion: z.string().min(1, "La descripción es requerida"),
 });
 
 type AdminFormData = z.infer<typeof adminSchema>;
@@ -34,10 +34,11 @@ function HomeContent() {
     tarea: "",
     empleado: "5",
     horas: "13:45",
-    descripcion: "Avance de obra en sector 4",
   });
 
   const [errors, setErrors] = useState<any>({});
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [taskToFinishId, setTaskToFinishId] = useState<number | null>(null);
 
   // Initialize tasks from localStorage
   useEffect(() => {
@@ -131,13 +132,11 @@ function HomeContent() {
           tareaID: formData.tarea,
           empleado: formData.empleado,
           horas: formData.horas,
-          descripcion: formData.descripcion,
         };
         const updatedTasks = [...activeTasks, newTask];
         setActiveTasks(updatedTasks);
         localStorage.setItem("activeTasks", JSON.stringify(updatedTasks));
         console.log("Tarea agregada:", JSON.stringify(updatedTasks));
-        alert("Tarea agregada exitosamente"+JSON.stringify(updatedTasks));
         setShowForm(false);
       }
       setIsSubmitted(true);
@@ -146,15 +145,100 @@ function HomeContent() {
   };
 
   const handleFinishTask = (taskId: number) => {
-    const taskToFinish = activeTasks.find(t => t.id === taskId);
-    if (!taskToFinish) return;
+    // Open QR scanner to verify before finishing
+    setTaskToFinishId(taskId);
+    setShowQRScanner(true);
+  };
+
+  const handleQRScanSuccess = (decodedText: string) => {
+    if (!taskToFinishId) return;
+
+    const taskToFinish = activeTasks.find(t => t.id === taskToFinishId);
+    if (!taskToFinish) {
+      alert("Tarea no encontrada.");
+      setShowQRScanner(false);
+      setTaskToFinishId(null);
+      return;
+    }
+
+    try {
+      // Extract projectId and taskId from scanned URL
+      const url = new URL(decodedText);
+      const scannedProjectId = url.searchParams.get("proyectoID");
+      const scannedTaskId = url.searchParams.get("tareaID");
+
+      // Validate against active task
+      if (
+        scannedProjectId === taskToFinish.proyectoID &&
+        scannedTaskId === taskToFinish.tareaID
+      ) {
+        // QR code matches! Close scanner and proceed with completion
+        setShowQRScanner(false);
+        completeTask(taskToFinish);
+      } else {
+        alert(
+          `Código QR incorrecto.\n\nEsperado: Proyecto ${taskToFinish.proyectoID}, Tarea ${taskToFinish.tareaID}\nEscaneado: Proyecto ${scannedProjectId || "N/A"}, Tarea ${scannedTaskId || "N/A"}`
+        );
+        setShowQRScanner(false);
+        setTaskToFinishId(null);
+      }
+    } catch (error) {
+      alert("El código QR no contiene una URL válida.");
+      setShowQRScanner(false);
+      setTaskToFinishId(null);
+    }
+  };
+
+  const handleQRScanError = () => {
+    setShowQRScanner(false);
+    setTaskToFinishId(null);
+  };
+
+  const completeTask = (taskToFinish: any) => {
+    // Prompt for description
+    const descripcion = prompt("Describe el trabajo realizado:");
+    if (!descripcion || descripcion.trim() === "") {
+      alert("Debe proporcionar una descripción para finalizar la tarea.");
+      setTaskToFinishId(null);
+      return;
+    }
+
+    // Calculate time duration
+    const endTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    const startParts = taskToFinish.horas.split(':');
+    const endParts = endTime.split(':');
+    
+    const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+    const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+    
+    let durationMinutes = endMinutes - startMinutes;
+    if (durationMinutes < 0) durationMinutes += 24 * 60; // Handle crossing midnight
+    
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    const duration = `${hours}h ${minutes}m`;
 
     const finishedTask = {
       ...taskToFinish,
-      finalizado: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+      descripcion: descripcion.trim(),
+      finalizado: endTime,
+      duracion: duration
     };
 
-    const updatedActive = activeTasks.filter(t => t.id !== taskId);
+    // Create JSON summary
+    const jsonSummary = {
+      projectId: taskToFinish.proyectoID,
+      taskId: taskToFinish.tareaID,
+      userId: taskToFinish.empleado,
+      description: descripcion.trim(),
+      time: duration
+    };
+
+    // Display JSON to user
+    alert(`Tarea completada:\n\n${JSON.stringify(jsonSummary, null, 2)}`);
+    console.log("Task completed:", jsonSummary);
+
+    const updatedActive = activeTasks.filter(t => t.id !== taskToFinish.id);
     const updatedCompleted = [finishedTask, ...completedTasks];
 
     setActiveTasks(updatedActive);
@@ -162,6 +246,7 @@ function HomeContent() {
     
     localStorage.setItem("activeTasks", JSON.stringify(updatedActive));
     localStorage.setItem("completedTasks", JSON.stringify(updatedCompleted));
+    setTaskToFinishId(null);
   };
 
   const isValid = useMemo(() => {
@@ -210,7 +295,17 @@ function HomeContent() {
   if (!isAuthenticated || !userRole) return null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 font-sans dark:bg-zinc-950">
+    <>
+      <QRScannerModal
+        isOpen={showQRScanner}
+        onClose={() => {
+          setShowQRScanner(false);
+          setTaskToFinishId(null);
+        }}
+        onScanSuccess={handleQRScanSuccess}
+        onScanError={handleQRScanError}
+      />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 font-sans dark:bg-zinc-950">
       <div className={`grid w-full max-w-5xl gap-8 transition-all ${userRole === "admin" ? "lg:grid-cols-[1fr_400px]" : "lg:max-w-xl"}`}>
         {/* Main Content */}
         <div className="overflow-hidden rounded-3xl bg-white shadow-2xl transition-all dark:bg-zinc-900 dark:ring-1 dark:ring-white/10">
@@ -301,7 +396,9 @@ function HomeContent() {
                             <div className="flex items-start justify-between">
                               <div className="space-y-3">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{task.descripcion}</h3>
+                                  <h3 className="font-bold text-zinc-900 dark:text-zinc-100">
+                                    {task.descripcion || "Tarea en progreso"}
+                                  </h3>
                                   <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-600 dark:bg-green-900/20 dark:text-green-400">ACTIVO</span>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -394,19 +491,6 @@ function HomeContent() {
                   readOnly={true}
                   customClassName="bg-zinc-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-80"
                 />
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Descripción</label>
-                  <textarea
-                    name="descripcion"
-                    rows={3}
-                    value={formData.descripcion}
-                    onChange={handleChange}
-                    className={`flex w-full max-h-32 min-h-32 rounded-xl border bg-transparent px-4 py-2 text-sm focus:outline-none focus:ring-1 ${
-                      errors.descripcion ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black dark:border-zinc-800 dark:focus:border-white"
-                    }`}
-                  />
-                  {errors.descripcion && <p className="text-xs text-red-500">{errors.descripcion}</p>}
-                </div>
                 <button
                   type="submit"
                   disabled={!isValid || isSubmitted || missingIds}
@@ -416,7 +500,7 @@ function HomeContent() {
                     "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                   } disabled:opacity-50`}
                 >
-                  {isSubmitted ? "¡Datos Enviados!" : missingIds ? "Reporte Bloqueado" : "Enviar Reporte"}
+                  {isSubmitted ? "¡Tarea Iniciada!" : missingIds ? "Tarea Bloqueada" : "Iniciar Tarea"}
                 </button>
               </form>
             )}
@@ -458,6 +542,7 @@ function HomeContent() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
