@@ -194,7 +194,7 @@ function HomeContent() {
     setTaskToFinishId(null);
   };
 
-  const completeTask = (taskToFinish: any) => {
+  const completeTask = async (taskToFinish: any) => {
     // Prompt for description
     const descripcion = prompt("Describe el trabajo realizado:");
     if (!descripcion || descripcion.trim() === "") {
@@ -227,16 +227,34 @@ function HomeContent() {
 
     // Create JSON summary
     const jsonSummary = {
-      projectId: taskToFinish.proyectoID,
-      taskId: taskToFinish.tareaID,
-      userId: taskToFinish.empleado,
-      description: descripcion.trim(),
-      time: duration
+      id_proyecto: taskToFinish.proyectoID,
+      id_tarea: taskToFinish.tareaID,
+      id_usuario: taskToFinish.empleado,
+      descripcion: descripcion.trim(),
+      horas: duration,
+      date: new Date().toISOString(),
     };
 
-    // Display JSON to user
-    alert(`Tarea completada:\n\n${JSON.stringify(jsonSummary, null, 2)}`);
-    console.log("Task completed:", jsonSummary);
+    // Send data to webhook
+    try {
+      const response = await fetch("https://n8n-n8n.2fsywk.easypanel.host/webhook/hoja_horas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(jsonSummary),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.log("Task data sent to webhook successfully:", jsonSummary);
+      alert(`Tarea completada y enviada:\n\n${JSON.stringify(jsonSummary, null, 2)}`);
+    } catch (error) {
+      console.error("Error sending task data to webhook:", error);
+      alert(`Tarea completada pero hubo un error al enviar los datos:\n\n${JSON.stringify(jsonSummary, null, 2)}\n\nError: ${error}`);
+    }
 
     const updatedActive = activeTasks.filter(t => t.id !== taskToFinish.id);
     const updatedCompleted = [finishedTask, ...completedTasks];
