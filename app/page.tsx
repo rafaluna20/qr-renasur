@@ -28,6 +28,7 @@ function HomeContent() {
   const [activeTasks, setActiveTasks] = useState<any[]>([]);
   const [completedTasks, setCompletedTasks] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
+  const [userView, setUserView] = useState<"dashboard" | "tasks">("dashboard");
   const URL_PUBLIC = process.env.NEXT_PUBLIC_URL;
   const [formData, setFormData] = useState({
     proyecto: "",
@@ -325,25 +326,45 @@ function HomeContent() {
       />
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 font-sans dark:bg-zinc-950">
       <div className={`grid w-full max-w-5xl gap-8 transition-all ${userRole === "admin" ? "lg:grid-cols-[1fr_400px]" : "lg:max-w-xl"}`}>
-        {/* Main Content */}
-        <div className="overflow-hidden rounded-3xl bg-white shadow-2xl transition-all dark:bg-zinc-900 dark:ring-1 dark:ring-white/10">
-          <div className="p-8">
-            <div className="mb-8 flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {userRole === "admin" ? "Panel de Administrador" : "Reporte de Usuario"}
-                </h1>
-                <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                  {userRole === "admin" ? "Genera códigos QR para proyectos." : "Registra tu avance de hoy."}
-                </p>
+        {/* User Dashboard View */}
+        {userRole === "user" && userView === "dashboard" && (
+          <UserDashboard 
+            userName="api rasto ai" 
+            onNavigateToTasks={() => setUserView("tasks")} 
+            onLogout={handleLogout}
+          />
+        )}
+
+        {/* Main Content (Admin Panel or User Task View) */}
+        {((userRole === "admin") || (userRole === "user" && userView === "tasks")) && (
+          <div className="overflow-hidden rounded-3xl bg-white shadow-2xl transition-all dark:bg-zinc-900 dark:ring-1 dark:ring-white/10">
+            <div className="p-8">
+              <div className="mb-8 flex items-start justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    {userRole === "admin" ? "Panel de Administrador" : "Reporte de Usuario"}
+                  </h1>
+                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                    {userRole === "admin" ? "Genera códigos QR para proyectos." : "Registra tu avance de hoy."}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {userRole === "user" && (
+                    <button
+                      onClick={() => setUserView("dashboard")}
+                      className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    >
+                      Volver al Dashboard
+                    </button>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
 
             {userRole === "admin" ? (
               <form onSubmit={handleSubmit} className="grid gap-6">
@@ -527,6 +548,7 @@ function HomeContent() {
             <p className="text-center text-xs text-zinc-400">QR Generator Studio • {userRole === "admin" ? "Admin" : "User"}</p>
           </div>
         </div>
+        )}
 
         {/* Admin Preview Sidebar */}
         {userRole === "admin" && (
@@ -595,6 +617,97 @@ function Field({ id, label, value, error, onChange, placeholder, readOnly, custo
         placeholder={placeholder}
       />
       {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+function UserDashboard({ userName, onNavigateToTasks, onLogout }: any) {
+  return (
+    <div className="w-full space-y-6">
+      {/* Profile Header */}
+      <div className="flex flex-col items-center justify-center rounded-[40px] bg-white p-10 shadow-sm dark:bg-zinc-900 ring-1 ring-zinc-100 dark:ring-white/5">
+        <div className="relative mb-6">
+          <div className="flex h-32 w-32 items-center justify-center rounded-full border-2 border-blue-500 p-1">
+            <div className="h-full w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+              {/* Profile Image/QR Placeholder */}
+              <div className="flex h-full w-full items-center justify-center bg-white dark:bg-zinc-900">
+                <div className="relative h-20 w-20 overflow-hidden rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-black dark:text-white opacity-90"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><path d="M12 7v10"/><path d="M7 12h10"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="absolute bottom-1 right-2 h-6 w-6 rounded-full border-4 border-white bg-green-500 dark:border-zinc-900" />
+        </div>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{userName}</h2>
+        <div className="mt-4 flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-1.5 dark:bg-white/5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Colaborador</span>
+        </div>
+      </div>
+
+      {/* Main Action - Marcar Asistencia */}
+      <div className="group relative overflow-hidden rounded-[30px] border border-zinc-100 bg-white p-8 shadow-sm transition-all hover:shadow-md dark:border-white/5 dark:bg-zinc-900">
+        <div className="absolute -right-4 -top-4 opacity-[0.05] transition-transform group-hover:scale-110">
+          <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-600 blur-2xl opacity-20" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Marcar Asistencia</h3>
+            <p className="text-sm text-zinc-500 font-medium">Registra tu entrada o salida</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid Menu */}
+      <div className="grid grid-cols-2 gap-4">
+        <button 
+          onClick={onNavigateToTasks}
+          className="group flex flex-col items-start rounded-[30px] border border-orange-100 bg-white p-6 transition-all hover:bg-orange-50/30 dark:border-white/5 dark:bg-zinc-900 dark:hover:bg-zinc-800/50"
+        >
+          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600 dark:bg-orange-900/20">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Horas</h4>
+          <p className="text-xs text-zinc-500">Tareo semanal</p>
+        </button>
+
+        <div className="relative flex flex-col items-start rounded-[30px] bg-zinc-100/50 p-6 dark:bg-white/5 opacity-60">
+          <span className="absolute right-4 top-4 rounded-md bg-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800">PRONTO</span>
+          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-zinc-400 dark:bg-zinc-800">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h4 className="text-lg font-bold text-zinc-400">Gastos</h4>
+          <p className="text-xs text-zinc-400">Rendiciones</p>
+        </div>
+
+        <div className="relative flex flex-col items-start rounded-[30px] bg-zinc-100/50 p-6 dark:bg-white/5 opacity-60">
+          <span className="absolute right-4 top-4 rounded-md bg-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800">PRONTO</span>
+          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-zinc-400 dark:bg-zinc-800">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M9 22V12h6v10"/><path d="M8 2h8"/></svg>
+          </div>
+          <h4 className="text-lg font-bold text-zinc-400">Proyectos</h4>
+          <p className="text-xs text-zinc-400">Mis asignaciones</p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="pt-8 text-center">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Akallpa Employee Portal</p>
+      </div>
+
+      <button 
+        onClick={onLogout}
+        className="w-full rounded-2xl py-4 text-xs font-bold text-zinc-400 hover:text-red-500 transition-colors"
+      >
+        Cerrar Sesión
+      </button>
     </div>
   );
 }
