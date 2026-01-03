@@ -53,17 +53,21 @@ function HomeContent() {
   useEffect(() => {
     const savedPID = localStorage.getItem("proyectoID");
     const savedTID = localStorage.getItem("tareaID");
+    const savedEID = localStorage.getItem("userID");
     
     const pID = searchParams.get("proyectoID") || savedPID;
     const tID = searchParams.get("tareaID") || savedTID;
+    const eID = searchParams.get("userID") || savedEID;
 
     if (pID) localStorage.setItem("proyectoID", pID);
     if (tID) localStorage.setItem("tareaID", tID);
+    if (eID) localStorage.setItem("userID", eID);
 
     setFormData(prev => ({
       ...prev,
       proyecto: pID || prev.proyecto,
       tarea: tID || prev.tarea,
+      empleado: eID || prev.empleado,
     }));
   }, [searchParams]);
 
@@ -522,7 +526,7 @@ function HomeContent() {
                     </p>
                   </div>
                 )}
-                <Field id="empleado" label="Usuario ID" value={formData.empleado} error={errors.empleado} onChange={handleChange} />
+                <Field id="empleado" readOnly={true}  label="Usuario ID" value={formData.empleado} error={errors.empleado} onChange={handleChange} customClassName="bg-zinc-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-80" />
                 <Field 
                   id="horas" 
                   label="Hora de marcado" 
@@ -624,8 +628,127 @@ function Field({ id, label, value, error, onChange, placeholder, readOnly, custo
 }
 
 function UserDashboard({ userName, onNavigateToTasks, onLogout }: any) {
+ const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
+ const [showQRScanner, setShowQRScanner] = useState(false);
+
+ const executeAssistance = async () => {
+  try {
+    setStatus({ type: 'loading', message: 'Procesando...' });
+    const savedEIDRaw = localStorage.getItem("userID");
+
+    if (savedEIDRaw === null) {
+      throw new Error("userID no existe en localStorage");
+    }
+
+    const savedEID = Number(savedEIDRaw);
+
+    if (isNaN(savedEID)) {
+      throw new Error("userID no es un número válido");
+    }
+
+    const response = await fetch('/api/assistance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: savedEID }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Error al marcar la asistencia");
+    }
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const now = new Date();
+    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    if (data.data.result) {
+      if (data.data.result.length === 0) {
+        await fetch('/api/assistance/in', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: savedEID }),
+        });
+        setStatus({ type: 'success', message: `¡Entrada registrada a las ${timeStr}!` });
+      } else {
+        const lastRegistry = data.data.result[0]; 
+        if (!lastRegistry.check_out) {
+          const responseOut = await fetch('/api/assistance/out', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ registryId: lastRegistry.id }),
+          });
+          const dataOut = await responseOut.json();
+          if (!responseOut.ok) {
+            throw new Error(dataOut.error || "Error al marcar la salida");
+          }
+          console.log("Salida registrada:", dataOut);
+          setStatus({ type: 'success', message: `¡Salida registrada a las ${timeStr}!` });
+        } else {
+          const responseIn = await fetch('/api/assistance/in', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: savedEID }),
+          });
+          const dataIn = await responseIn.json();
+          if (!responseIn.ok) {
+            throw new Error(dataIn.error || "Error al marcar nueva entrada");
+          }
+          console.log("Nueva entrada registrada:", dataIn);
+          setStatus({ type: 'success', message: `¡Entrada registrada a las ${timeStr}!` });
+        }
+      }
+    }
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setStatus(prev => prev.type === 'success' ? { type: 'idle', message: '' } : prev);
+    }, 5000);
+
+  } catch (error) {
+    console.error("Error marking attendance:", error);
+    setStatus({ 
+      type: 'error', 
+      message: error instanceof Error ? error.message : "Error desconocido al registrar asistencia" 
+    });
+    
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      setStatus(prev => prev.type === 'error' ? { type: 'idle', message: '' } : prev);
+    }, 5000);
+  }
+ };
+
+ const handleScanSuccess = (decodedText: string) => {
+    try {
+      const url = new URL(decodedText);
+      const proyectoID = url.searchParams.get("proyectoID");
+      const tareaID = url.searchParams.get("tareaID");
+
+      if (proyectoID===process.env.NEXT_PUBLIC_PROYECTO_ID && tareaID===process.env.NEXT_PUBLIC_TAREA_ID) {
+        setShowQRScanner(false);
+        executeAssistance();
+      } else {
+        alert("El código QR no es válido para asistencia.");
+        setShowQRScanner(false);
+      }
+    } catch (e) {
+      alert("El código QR escaneado no es una URL válida.");
+      setShowQRScanner(false);
+    }
+ };
+
+ const handleScanError = () => {
+    // console.warn(error);
+ };
+
   return (
     <div className="w-full space-y-6">
+      <QRScannerModal
+        isOpen={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+        onScanSuccess={handleScanSuccess}
+        onScanError={handleScanError}
+      />
       {/* Profile Header */}
       <div className="flex flex-col items-center justify-center rounded-[40px] bg-white p-10 shadow-sm dark:bg-zinc-900 ring-1 ring-zinc-100 dark:ring-white/5">
         <div className="relative mb-6">
@@ -649,23 +772,56 @@ function UserDashboard({ userName, onNavigateToTasks, onLogout }: any) {
       </div>
 
       {/* Main Action - Marcar Asistencia */}
-      <div className="group relative overflow-hidden rounded-[30px] border border-zinc-100 bg-white p-8 shadow-sm transition-all hover:shadow-md dark:border-white/5 dark:bg-zinc-900">
+      <button 
+        onClick={() => setShowQRScanner(true)}
+        disabled={status.type === 'loading'}
+        className={`group w-full relative overflow-hidden rounded-[30px] border p-8 shadow-sm transition-all text-left
+          ${status.type === 'error' 
+            ? 'border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800' 
+            : status.type === 'success'
+              ? 'border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-800'
+              : 'border-zinc-100 bg-white hover:shadow-md dark:border-white/5 dark:bg-zinc-900'
+          }
+        `}
+      >
         <div className="absolute -right-4 -top-4 opacity-[0.05] transition-transform group-hover:scale-110">
           <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         </div>
         <div className="flex items-center gap-6">
           <div className="relative">
-            <div className="absolute inset-0 bg-blue-600 blur-2xl opacity-20" />
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <div className={`absolute inset-0 blur-2xl opacity-20 ${status.type === 'success' ? 'bg-green-500' : status.type === 'error' ? 'bg-red-500' : 'bg-blue-600'}`} />
+            <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg transition-colors
+              ${status.type === 'success' 
+                ? 'bg-green-500 text-white shadow-green-500/40' 
+                : status.type === 'error'
+                  ? 'bg-red-500 text-white shadow-red-500/40'
+                  : 'bg-blue-600 text-white shadow-blue-500/40'
+              }
+            `}>
+              {status.type === 'loading' ? (
+                <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : status.type === 'success' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              ) : status.type === 'error' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              )}
             </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Marcar Asistencia</h3>
-            <p className="text-sm text-zinc-500 font-medium">Registra tu entrada o salida</p>
+          <div className="flex-1">
+            <h3 className={`text-xl font-bold tracking-tight transition-colors ${status.type === 'error' ? 'text-red-600 dark:text-red-400' : status.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-zinc-900 dark:text-zinc-50'}`}>
+              {status.type === 'idle' ? 'Marcar Asistencia' : status.message}
+            </h3>
+            <p className={`text-sm font-medium transition-colors ${status.type === 'error' ? 'text-red-500/80 dark:text-red-400/80' : status.type === 'success' ? 'text-green-600/80 dark:text-green-400/80' : 'text-zinc-500'}`}>
+              {status.type === 'idle' ? 'Registra tu entrada o salida' : status.type === 'loading' ? 'Conectando con servidor...' : status.type === 'success' ? 'Registro exitoso' : 'Intenta nuevamente'}
+            </p>
           </div>
         </div>
-      </div>
+      </button>
 
       {/* Grid Menu */}
       <div className="grid grid-cols-2 gap-4">

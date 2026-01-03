@@ -8,26 +8,24 @@ import { z } from "zod";
 const registerSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   email: z.string().email("Correo electrónico inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  confirmPassword: z.string().min(6, "Debe confirmar su contraseña"),
+  dni: z.string().regex(/^\d{8}$/, "El DNI debe tener 8 dígitos"),
+  phone: z.string().regex(/^9\d{8}$/, "El teléfono debe empezar con 9 y tener 9 dígitos"),
   role: z.enum(["admin", "user"]),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden",
-  path: ["confirmPassword"],
 });
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ 
     name: "", 
     email: "", 
-    password: "", 
-    confirmPassword: "", 
+    dni: "", 
+    phone: "", 
     role: "user" as "user" | "admin" 
   });
   const [errors, setErrors] = useState<any>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const result = registerSchema.safeParse(formData);
     if (!result.success) {
@@ -44,11 +42,22 @@ export default function RegisterPage() {
       setErrors({ email: "Solo el correo autorizado puede registrarse como administrador" });
       return;
     }
-
+    setLoading(true);
+    const response = await fetch('/api/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Error al registrar el usuario");
+    }
+    setLoading(false);
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("userName", formData.name);
     localStorage.setItem("userEmail", formData.email);
     localStorage.setItem("userRole", formData.role);
+    localStorage.setItem("userID", data.data.result);
     router.push("/");
   };
 
@@ -121,41 +130,44 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Contraseña
+                DNI
               </label>
               <input
-                type="password"
+                type="text"
+                maxLength={8}
                 className={`flex h-11 w-full rounded-xl border bg-transparent px-4 py-2 text-sm transition-all focus:outline-none focus:ring-1 ${
-                  errors.password ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black focus:ring-black dark:border-zinc-800 dark:focus:border-white"
+                  errors.dni ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black focus:ring-black dark:border-zinc-800 dark:focus:border-white"
                 }`}
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="12345678"
+                value={formData.dni}
+                onChange={(e) => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, '') })}
               />
-              {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+              {errors.dni && <p className="text-xs text-red-500">{errors.dni}</p>}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Confirmar Contraseña
+                Teléfono
               </label>
               <input
-                type="password"
+                type="text"
+                maxLength={9}
                 className={`flex h-11 w-full rounded-xl border bg-transparent px-4 py-2 text-sm transition-all focus:outline-none focus:ring-1 ${
-                  errors.confirmPassword ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black focus:ring-black dark:border-zinc-800 dark:focus:border-white"
+                  errors.phone ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black focus:ring-black dark:border-zinc-800 dark:focus:border-white"
                 }`}
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                placeholder="987654321"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
               />
-              {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
+              {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
             </div>
 
             <button
               type="submit"
               className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-black text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              disabled={loading}
             >
-              Registrarse
+              {loading ? "Registrando..." : "Registrarse"}
             </button>
           </form>
 

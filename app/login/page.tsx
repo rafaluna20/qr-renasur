@@ -7,7 +7,7 @@ import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  password: z.string().min(8, "El DNI debe tener al menos 8 caracteres"),
   role: z.enum(["admin", "user"]),
 });
 
@@ -20,9 +20,27 @@ function LoginContent() {
     role: "user" as "user" | "admin" 
   });
   const [errors, setErrors] = useState<{ email?: string; password?: string; role?: string }>({});
+  const [users,setUsers] = useState<any>([]);
+  const [loading, setLoading] = useState(false);
 
   const EMAIL_ADMIN = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
   const PASSWORD_ADMIN = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+        const data = await response.json();
+        setUsers(data.data.result)
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     const pID = searchParams.get("proyectoID");
@@ -53,10 +71,23 @@ function LoginContent() {
         return;
       }
     }
+    setLoading(true);
+
+    const user = users.find((user: any) => user.work_email === formData.email);
+    if (!user) {
+      setErrors({ email: "Usuario no encontrado" });
+      return;
+    }
+    if (formData.password !== user.identification_id) {
+      setErrors({ password: "Contraseña incorrecta" });
+      return;
+    }
 
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("userEmail", formData.email);
     localStorage.setItem("userRole", formData.role);
+    localStorage.setItem("userID", user.id);
+    setLoading(false);
     router.push("/");
   };
 
@@ -130,8 +161,9 @@ function LoginContent() {
             <button
               type="submit"
               className="flex h-12 w-full items-center justify-center rounded-xl bg-black text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              disabled={loading}
             >
-              Iniciar Sesión
+              {loading ? "Cargando..." : "Iniciar Sesión"}
             </button>
           </form>
 
