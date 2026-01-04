@@ -10,7 +10,7 @@ const jsonSummary = {
     "args": [
       "odoo_akallpav1",
       8,
-      "f2a39d51df80d99dd3902eecc520251972ddae33",
+      "750735676a526e214338805a0084c4e3c9b62e5b",
       "hr.employee",
       "search_read",
       [
@@ -24,7 +24,8 @@ const jsonSummary = {
           "name",
           "work_email",
           "identification_id",
-          "work_phone"
+          "work_phone",
+          "image_128"
         ],
         "limit": 100
       }

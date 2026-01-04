@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
         "args": [
           "odoo_akallpav1",                // Nombre de la base de datos
           8,                               // ID de usuario (uid)
-          "f2a39d51df80d99dd3902eecc520251972ddae33", // Token o password
+          "750735676a526e214338805a0084c4e3c9b62e5b", // Token o password
           "hr.employee",                   // Modelo
           "create",                        // Método
           [

@@ -31,6 +31,8 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [userView, setUserView] = useState<"dashboard" | "tasks">("dashboard");
   const [historyView, setHistoryView] = useState<"list" | "weekly">("list");
+  const [userName, setUserName] = useState<string>("");
+  const [userImage, setUserImage] = useState<string>("");
   
   const groupedTasks = useMemo(() => {
     const groups: Record<string, { totalHours: number, tasks: any[] }> = {};
@@ -120,11 +122,15 @@ function HomeContent() {
   useEffect(() => {
     const auth = localStorage.getItem("isAuthenticated");
     const role = localStorage.getItem("userRole") as "admin" | "user";
+    const name = localStorage.getItem("userName");
+    const image = localStorage.getItem("userImage");
     if (!auth || !role) {
       router.push("/login");
     } else {
       setIsAuthenticated(true);
       setUserRole(role);
+      setUserName(name || "");
+      setUserImage(image || "");
     }
   }, [router]);
 
@@ -386,7 +392,8 @@ function HomeContent() {
         {/* User Dashboard View */}
         {userRole === "user" && userView === "dashboard" && (
           <UserDashboard 
-            userName="api rasto ai" 
+            userName={userName} 
+            userImage={userImage}
             onNavigateToTasks={() => setUserView("tasks")} 
             onLogout={handleLogout}
           />
@@ -753,7 +760,7 @@ function Field({ id, label, value, error, onChange, placeholder, readOnly, custo
   );
 }
 
-function UserDashboard({ userName, onNavigateToTasks, onLogout }: any) {
+function UserDashboard({ userName, userImage, onNavigateToTasks, onLogout }: any) {
  const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
  const [showQRScanner, setShowQRScanner] = useState(false);
 
@@ -882,8 +889,12 @@ function UserDashboard({ userName, onNavigateToTasks, onLogout }: any) {
             <div className="h-full w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
               {/* Profile Image/QR Placeholder */}
               <div className="flex h-full w-full items-center justify-center bg-white dark:bg-zinc-900">
-                <div className="relative h-20 w-20 overflow-hidden rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-black dark:text-white opacity-90"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><path d="M12 7v10"/><path d="M7 12h10"/></svg>
+                <div className="relative h-30 w-30 overflow-hidden rounded-lg">
+                  <img 
+                    src={`data:image/svg+xml;base64,${userImage}`} 
+                    alt="Profile" 
+                    className="h-full w-full rounded-full" 
+                  />
                 </div>
               </div>
             </div>

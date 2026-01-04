@@ -68,6 +68,7 @@ function LoginContent() {
       console.log(PASSWORD_ADMIN);
       if (formData.email !== EMAIL_ADMIN || formData.password !== PASSWORD_ADMIN) {
         setErrors({ email: "Credenciales de administrador incorrectas" });
+        setLoading(false);
         return;
       }
     }
@@ -76,10 +77,12 @@ function LoginContent() {
     const user = users.find((user: any) => user.work_email === formData.email);
     if (!user) {
       setErrors({ email: "Usuario no encontrado" });
+      setLoading(false);
       return;
     }
     if (formData.password !== user.identification_id) {
       setErrors({ password: "Contraseña incorrecta" });
+      setLoading(false);
       return;
     }
 
@@ -87,6 +90,8 @@ function LoginContent() {
     localStorage.setItem("userEmail", formData.email);
     localStorage.setItem("userRole", formData.role);
     localStorage.setItem("userID", user.id);
+    localStorage.setItem("userImage", user.image_128);
+    localStorage.setItem("userName", user.name);
     setLoading(false);
     router.push("/");
   };
