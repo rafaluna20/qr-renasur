@@ -361,6 +361,12 @@ function HomeContent() {
       alert("Error al descargar el código QR");
     }
   };
+  function formatHoursMinutes(decimalHours: number): string {
+  const hours = Math.floor(decimalHours);              // parte entera → horas
+  const minutes = Math.round((decimalHours - hours) * 60); // parte decimal → minutos
+  return `${String(hours).padStart(2, '0')}h: ${String(minutes).padStart(2, '0')}m`;
+}
+
 
   if (!isAuthenticated || !userRole) return null;
 
@@ -568,7 +574,7 @@ function HomeContent() {
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-500">
-                                          <span className="text-xs">{task.date} — {task.unit_amount}h</span>
+                                          <span className="text-xs">{task.date} — {formatHoursMinutes(task.unit_amount)}</span>
                                         </div>
                                       </div>
                                     </div>
@@ -592,7 +598,7 @@ function HomeContent() {
                                           </p>
                                         </div>
                                         <div className="rounded-xl bg-white px-3 py-1.5 text-sm font-bold shadow-sm dark:bg-zinc-800 dark:text-zinc-200">
-                                          {totalHours.toFixed(2)}h Total
+                                          {formatHoursMinutes(totalHours)} Total
                                         </div>
                                       </div>
                                     </div>
@@ -609,7 +615,7 @@ function HomeContent() {
                                               </p>
                                             </div>
                                             <div className="flex-shrink-0 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                                              {task.unit_amount}h
+                                              {formatHoursMinutes(task.unit_amount)}
                                             </div>
                                           </div>
                                         </div>
