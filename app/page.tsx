@@ -990,10 +990,20 @@ function UserDashboard({ userName, userImage, onNavigateToTasks, onLogout }: any
   const handleScanSuccess = (decodedText: string) => {
     try {
       const url = new URL(decodedText);
+      const isLoginUrl = url.pathname === '/login' || url.pathname.endsWith('/login');
+
+      if (isLoginUrl) {
+        // Es el QR de asistencia generado por el admin
+        setShowQRScanner(false);
+        executeAssistance();
+        return;
+      }
+
       const proyectoID = url.searchParams.get("proyectoID");
       const tareaID = url.searchParams.get("tareaID");
 
       if (proyectoID === process.env.NEXT_PUBLIC_PROYECTO_ID && tareaID === process.env.NEXT_PUBLIC_TAREA_ID) {
+        // Es un QR de proyecto válido
         setShowQRScanner(false);
         executeAssistance();
       } else {
@@ -1001,7 +1011,7 @@ function UserDashboard({ userName, userImage, onNavigateToTasks, onLogout }: any
         setShowQRScanner(false);
       }
     } catch (e) {
-      alert("El código QR escaneado no es una URL válida.");
+      alert("El código QR escaneado no es válido.");
       setShowQRScanner(false);
     }
   };
