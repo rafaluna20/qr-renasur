@@ -64,16 +64,26 @@ function LoginContent() {
 
     // Simulated Login
     if (formData.role === "admin") {
-      console.log(EMAIL_ADMIN);
-      console.log(PASSWORD_ADMIN);
       if (formData.email !== EMAIL_ADMIN || formData.password !== PASSWORD_ADMIN) {
         setErrors({ email: "Credenciales de administrador incorrectas" });
         setLoading(false);
         return;
       }
+      // Admin autenticado correctamente — redirigir directamente
+      setLoading(true);
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userEmail", formData.email);
+      localStorage.setItem("userRole", "admin");
+      localStorage.setItem("userID", "0");
+      localStorage.setItem("userImage", "");
+      localStorage.setItem("userName", "Administrador");
+      setLoading(false);
+      router.push("/");
+      return;
     }
-    setLoading(true);
 
+    // Login de usuario normal
+    setLoading(true);
     const user = users.find((user: any) => user.work_email === formData.email);
     if (!user) {
       setErrors({ email: "Usuario no encontrado" });

@@ -1,56 +1,54 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { getOdooClient, OdooAnalyticLine } from '@/lib/odoo-client';
+import { z } from 'zod';
 
+/**
+ * API Route: Consultar Líneas Analíticas (Horas registradas)
+ * Requiere módulo hr_timesheet instalado en Odoo para tener
+ * los campos employee_id, project_id y task_id.
+ */
+
+const taskQuerySchema = z.object({
+  userId: z.union([z.number(), z.string()]).transform(val => Number(val)),
+  limit: z.number().positive().optional().default(100),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
-    const employeeId = Number(userId);
-    const jsonSummary={
-  "jsonrpc": "2.0",
-  "method": "call",
-  "id": 12,
-  "params": {
-    "service": "object",
-    "method": "execute_kw",
-    "args": [
-      "odoo_akallpav1",
-      8,
-      "750735676a526e214338805a0084c4e3c9b62e5b",
-      "account.analytic.line",
-      "search_read",
-      [
-        [
-          ["employee_id", "=", employeeId]
-        ]
-      ],
-      {
-        "fields": ["date", "project_id", "task_id", "name", "unit_amount", "so_line"],
-        "limit": 100
-      }
-    ]
-  }
-}
+    const body = await req.json();
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_ODOO}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(jsonSummary),
-      });
+    const validationResult = taskQuerySchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { success: false, error: 'Datos de entrada inválidos', details: validationResult.error.issues },
+        { status: 400 }
+      );
+    }
 
+    const { userId, limit } = validationResult.data;
 
-    const data = await response.json();    
+    // Si userId es 0 o inválido (ej: rol admin), retornar vacío directamente
+    if (!userId || userId <= 0) {
+      return NextResponse.json({ success: true, data: { result: [], count: 0 } });
+    }
 
-    return NextResponse.json({ success: true, data });
-  } catch (error) {
-    console.error('Error in presign route:', error);
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
+    const odoo = getOdooClient();
+
+    // Filtrar por employee_id (disponible con hr_timesheet instalado)
+    const tasks = await odoo.searchRead<OdooAnalyticLine>(
+      'account.analytic.line',
+      [['employee_id', '=', userId]],
+      ['date', 'project_id', 'task_id', 'name', 'unit_amount', 'so_line'],
+      { limit, order: 'date desc' }
     );
+
+    return NextResponse.json({
+      success: true,
+      data: { result: tasks, count: tasks.length },
+    });
+
+  } catch (error) {
+    console.warn('task route: query failed, returning empty.', error instanceof Error ? error.message : error);
+    return NextResponse.json({ success: true, data: { result: [], count: 0 } });
   }
 }

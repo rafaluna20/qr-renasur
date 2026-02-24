@@ -1,0 +1,230 @@
+/**
+ * EJEMPLO: API Route Ideal
+ * 
+ * Este archivo muestra cómo crear una API route siguiendo
+ * las mejores prácticas implementadas en v2.0.
+ * 
+ * Para usar:
+ * 1. Copiar este archivo a app/api/tu-endpoint/route.ts
+ * 2. Adaptar el schema y la lógica
+ * 3. Eliminar este comentario
+ */
+
+import { NextRequest } from 'next/server';
+import { 
+  getOdooClient,
+  logger,
+  successResponse,
+  createdResponse,
+  handleAPIError,
+  validateRequestBody,
+  extractRequestMetadata,
+  checkRateLimit,
+  commonSchemas 
+} from '@/lib';
+import { z } from 'zod';
+
+// ============================================
+// 1. DEFINIR SCHEMAS DE VALIDACIÓN
+// ============================================
+
+const requestSchema = z.object({
+  // Usar schemas comunes cuando sea posible
+  userId: commonSchemas.flexibleId,
+  email: commonSchemas.email.optional(),
+  
+  // O definir custom
+  customField: z.string().min(3, 'Mínimo 3 caracteres'),
+  optionalField: z.number().optional(),
+  
+  // Arrays y objetos anidados
+  items: z.array(z.object({
+    id: z.number(),
+    name: z.string(),
+  })).optional(),
+});
+
+// Type inference automático
+type RequestData = z.infer<typeof requestSchema>;
+
+// ============================================
+// 2. HANDLER PRINCIPAL
+// ============================================
+
+export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  const metadata = extractRequestMetadata(req);
+  
+  try {
+    // ------------------------------------------
+    // A. Rate Limiting (opcional)
+    // ------------------------------------------
+    const rateLimit = checkRateLimit(req, {
+      maxRequests: 50,    // 50 requests
+      windowMs: 60000,    // por minuto
+    });
+    
+    if (!rateLimit.allowed) {
+      logger.warn('Rate limit exceeded', metadata);
+      return errorResponse(
+        'Demasiadas peticiones. Intenta de nuevo más tarde.',
+        { remaining: rateLimit.remaining },
+        429
+      );
+    }
+
+    // ------------------------------------------
+    // B. Validación de Entrada
+    // ------------------------------------------
+    const data = await validateRequestBody<RequestData>(req, requestSchema);
+    
+    logger.debug('Request validated', { 
+      ...metadata,
+      data: { ...data, email: '[REDACTED]' } // No loguear datos sensibles
+    });
+
+    // ------------------------------------------
+    // C. Lógica de Negocio
+    // ------------------------------------------
+    const odoo = getOdooClient();
+    
+    // Ejemplo: Buscar registros
+    const records = await odoo.searchRead(
+      'res.partner',
+      [['id', '=', data.userId]],
+      ['name', 'email', 'phone']
+    );
+
+    // Ejemplo: Crear registro
+    if (data.customField === 'create') {
+      const newId = await odoo.create('res.partner', {
+        name: 'Nuevo Partner',
+        email: data.email,
+      });
+      
+      logger.info('Record created', {
+        ...metadata,
+        partnerId: newId,
+        duration: Date.now() - startTime,
+      });
+
+      return createdResponse(
+        { id: newId, records },
+        'Registro creado exitosamente'
+      );
+    }
+
+    // ------------------------------------------
+    // D. Response Exitoso
+    // ------------------------------------------
+    logger.info('Request processed', {
+      ...metadata,
+      recordCount: records.length,
+      duration: Date.now() - startTime,
+    });
+
+    return successResponse(
+      records,
+      'Operación exitosa'
+    );
+
+  } catch (error) {
+    // ------------------------------------------
+    // E. Error Handling Automático
+    // ------------------------------------------
+    logger.error('Request failed', error as Error, {
+      ...metadata,
+      duration: Date.now() - startTime,
+    });
+
+    // handleAPIError maneja:
+    // - ZodError (validación)
+    // - OdooError (errores de Odoo)
+    // - Error genérico
+    return handleAPIError(error);
+  }
+}
+
+// ============================================
+// 3. OTROS MÉTODOS HTTP (opcional)
+// ============================================
+
+export async function GET(req: NextRequest) {
+  try {
+    // Rate limiting
+    const rateLimit = checkRateLimit(req);
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', undefined, 429);
+    }
+
+    // Extraer query params
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return errorResponse('userId es requerido', undefined, 400);
+    }
+
+    // Lógica
+    const odoo = getOdooClient();
+    const data = await odoo.searchRead(
+      'res.partner',
+      [['id', '=', Number(userId)]],
+      ['name']
+    );
+
+    return successResponse(data);
+
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+
+// ============================================
+// 4. MANEJO DE MÉTODOS NO PERMITIDOS
+// ============================================
+
+export async function PUT(req: NextRequest) {
+  return methodNotAllowedResponse(['GET', 'POST']);
+}
+
+export async function DELETE(req: NextRequest) {
+  return methodNotAllowedResponse(['GET', 'POST']);
+}
+
+// ============================================
+// NOTAS Y MEJORES PRÁCTICAS
+// ============================================
+
+/*
+✅ DO's:
+- Validar SIEMPRE con Zod
+- Usar logger para debugging
+- Rate limiting en endpoints públicos
+- Sanitizar datos sensibles en logs
+- Usar successResponse/errorResponse
+- Type inference con z.infer<>
+- Documentar con JSDoc
+- Medir duración con timestamps
+
+❌ DON'Ts:
+- No confiar en datos del cliente sin validar
+- No loguear credenciales/passwords
+- No retornar stack traces en producción
+- No usar any sin tipo
+- No hardcodear valores mágicos
+- No olvidar manejo de errores
+
+📚 Referencias:
+- Zod: https://zod.dev
+- Logging: Ver lib/logger.ts
+- Responses: Ver lib/api-response.ts
+- Validación: Ver lib/request-validator.ts
+
+🔒 Seguridad:
+- Rate limiting activo
+- Validación de entrada
+- Sanitización básica
+- Logs de auditoría
+- Error handling seguro (no expone internals)
+*/

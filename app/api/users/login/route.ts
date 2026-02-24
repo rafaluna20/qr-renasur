@@ -1,57 +1,54 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getOdooClient, OdooEmployee, OdooError } from '@/lib/odoo-client';
 
-const jsonSummary = {
-  "jsonrpc": "2.0",
-  "method": "call",
-  "id": 151,
-  "params": {
-    "service": "object",
-    "method": "execute_kw",
-    "args": [
-      "odoo_akallpav1",
-      8,
-      "750735676a526e214338805a0084c4e3c9b62e5b",
-      "hr.employee",
-      "search_read",
-      [
-        [
-          ["active", "=", true]
-        ]
-      ],
-      {
-        "fields": [
-          "id",
-          "name",
-          "work_email",
-          "identification_id",
-          "work_phone",
-          "image_128"
-        ],
-        "limit": 100
-      }
-    ]
-  }
-}
+/**
+ * API Route: Obtener Lista de Usuarios/Empleados
+ *
+ * Este endpoint retorna todos los empleados activos de Odoo.
+ * Usado para validación de login en el cliente.
+ *
+ * NOTA: En producción, este endpoint debería requerir autenticación
+ * y no exponer todos los usuarios.
+ */
 
 export async function POST() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_ODOO}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(jsonSummary),
-      });
+    const odoo = getOdooClient();
 
+    // Obtener empleados activos
+    const employees = await odoo.searchRead<OdooEmployee>(
+      'hr.employee',
+      [['active', '=', true]],
+      ['id', 'name', 'work_email', 'identification_id', 'work_phone', 'image_128'],
+      { limit: 100 }
+    );
 
-    const data = await response.json();    
+    return NextResponse.json({
+      success: true,
+      data: {
+        result: employees,
+        count: employees.length,
+      }
+    });
 
-    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error in presign route:', error);
+    console.error('Error in login route:', error);
+
+    if (error instanceof OdooError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Error de Odoo',
+          details: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       {
-        error: 'Internal server error',
+        success: false,
+        error: 'Error interno del servidor',
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

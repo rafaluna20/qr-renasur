@@ -1,13 +1,30 @@
 {
-  "name": "generator-gr",
-  "version": "0.1.0",
+  "name": "qr-generator-studio",
+  "version": "2.0.0",
+  "description": "Sistema de gestión de asistencia y tareas mediante códigos QR integrado con Odoo ERP",
+  "author": "Tu Empresa",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "health": "curl http://localhost:3000/api/health",
+    "env:example": "cp .env.example .env.local && echo ✅ Archivo .env.local creado",
+    "clean": "rm -rf .next",
+    "reinstall": "npm run clean && npm install"
   },
+  "keywords": [
+    "qr",
+    "attendance",
+    "odoo",
+    "erp",
+    "time-tracking",
+    "nextjs"
+  ],
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",
     "class-variance-authority": "^0.7.1",
