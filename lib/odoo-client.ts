@@ -180,7 +180,7 @@ export class OdooClient {
    * Eliminar registros
    */
   async unlink(model: string, ids: number[]): Promise<boolean> {
-    return this.call<boolean>(model, 'unlink', [[ids]]);
+    return this.call<boolean>(model, 'unlink', [ids]);
   }
 
   /**
@@ -206,7 +206,7 @@ export class OdooClient {
     ids: number[],
     fields: string[] = []
   ): Promise<T[]> {
-    return this.call<T[]>(model, 'read', [[ids]], { fields });
+    return this.call<T[]>(model, 'read', [ids], { fields });
   }
 
   /**
