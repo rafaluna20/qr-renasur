@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Error de Odoo',
-          details: error.message,
+          details: error.data ? JSON.stringify(error.data) : error.message,
         },
         { status: 500 }
       );
