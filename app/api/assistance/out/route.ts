@@ -38,10 +38,10 @@ export async function POST(req: NextRequest) {
 
     const odoo = getOdooClient();
     const now = new Date();
-    
+
     // Formatear fecha para Odoo: YYYY-MM-DD HH:MM:SS
     const pad = (n: number) => String(n).padStart(2, '0');
-    const checkOut = 
+    const checkOut =
       `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
       `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     if (latitude !== undefined && longitude !== undefined) {
       updateData.x_latitude_out = latitude;
       updateData.x_longitude_out = longitude;
-      
+
       if (accuracy !== undefined) {
         updateData.x_accuracy_out = accuracy;
       }
@@ -64,9 +64,9 @@ export async function POST(req: NextRequest) {
 
     if (!updated) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'No se pudo actualizar el registro de asistencia' 
+        {
+          success: false,
+          error: 'No se pudo actualizar el registro de asistencia'
         },
         { status: 500 }
       );
@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
       'worked_hours',
     ]);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: {
         message: 'Salida registrada exitosamente',
         attendance,

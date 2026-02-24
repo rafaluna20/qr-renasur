@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     if (latitude !== undefined && longitude !== undefined) {
       attendanceData.x_latitude = latitude;
       attendanceData.x_longitude = longitude;
-      
+
       if (accuracy !== undefined) {
         attendanceData.x_accuracy = accuracy;
       }

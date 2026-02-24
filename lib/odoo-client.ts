@@ -117,7 +117,7 @@ export class OdooClient {
         console.error('Error code:', data.error.code);
         console.error('Error data:', data.error.data);
         console.error('========================');
-        
+
         throw new OdooError(
           data.error.message,
           data.error.code,
@@ -173,7 +173,7 @@ export class OdooClient {
     ids: number[],
     values: Record<string, any>
   ): Promise<boolean> {
-    return this.call<boolean>(model, 'write', [[ids, values]]);
+    return this.call<boolean>(model, 'write', [ids, values]);
   }
 
   /**
