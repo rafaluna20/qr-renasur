@@ -926,11 +926,20 @@ function UserDashboard({ userName, userImage, onNavigateToTasks, onLogout }: any
 
       if (data.data.result) {
         if (data.data.result.length === 0) {
-          await fetch('/api/assistance/in', {
+          const responseIn = await fetch('/api/assistance/in', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: savedEID, ...locationData }),
           });
+
+          let dataIn;
+          const textIn = await responseIn.text();
+          try { dataIn = JSON.parse(textIn); } catch (e) { dataIn = null; }
+
+          if (!responseIn.ok) {
+            throw new Error(dataIn?.error || `Error del servidor (${responseIn.status}): ${textIn.slice(0, 100)}`);
+          }
+
           const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
           setStatus({ type: 'success', message: `¡Entrada registrada a las ${timeStr}!${locationMsg}` });
         } else {
@@ -941,9 +950,13 @@ function UserDashboard({ userName, userImage, onNavigateToTasks, onLogout }: any
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ registryId: lastRegistry.id, ...locationData }),
             });
-            const dataOut = await responseOut.json();
+
+            let dataOut;
+            const textOut = await responseOut.text();
+            try { dataOut = JSON.parse(textOut); } catch (e) { dataOut = null; }
+
             if (!responseOut.ok) {
-              throw new Error(dataOut.error || "Error al marcar la salida");
+              throw new Error(dataOut?.error || `Error del servidor (${responseOut.status}): ${textOut.slice(0, 100)}`);
             }
             console.log("Salida registrada:", dataOut);
             const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
@@ -954,9 +967,13 @@ function UserDashboard({ userName, userImage, onNavigateToTasks, onLogout }: any
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: savedEID, ...locationData }),
             });
-            const dataIn = await responseIn.json();
+
+            let dataIn;
+            const textIn = await responseIn.text();
+            try { dataIn = JSON.parse(textIn); } catch (e) { dataIn = null; }
+
             if (!responseIn.ok) {
-              throw new Error(dataIn.error || "Error al marcar nueva entrada");
+              throw new Error(dataIn?.error || `Error del servidor (${responseIn.status}): ${textIn.slice(0, 100)}`);
             }
             console.log("Nueva entrada registrada:", dataIn);
             const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
