@@ -170,17 +170,19 @@ export class OdooClient {
    */
   async write(
     model: string,
-    ids: number[],
+    ids: number[] | number,
     values: Record<string, any>
   ): Promise<boolean> {
-    return this.call<boolean>(model, 'write', [ids, values]);
+    const flatIds = Array.isArray(ids) ? ids.flat(Infinity) as number[] : [ids];
+    return this.call<boolean>(model, 'write', [flatIds, values]);
   }
 
   /**
    * Eliminar registros
    */
-  async unlink(model: string, ids: number[]): Promise<boolean> {
-    return this.call<boolean>(model, 'unlink', [ids]);
+  async unlink(model: string, ids: number[] | number): Promise<boolean> {
+    const flatIds = Array.isArray(ids) ? ids.flat(Infinity) as number[] : [ids];
+    return this.call<boolean>(model, 'unlink', [flatIds]);
   }
 
   /**
@@ -203,10 +205,11 @@ export class OdooClient {
    */
   async read<T = any>(
     model: string,
-    ids: number[],
+    ids: number[] | number,
     fields: string[] = []
   ): Promise<T[]> {
-    return this.call<T[]>(model, 'read', [ids], { fields });
+    const flatIds = Array.isArray(ids) ? ids.flat(Infinity) as number[] : [ids];
+    return this.call<T[]>(model, 'read', [flatIds], { fields });
   }
 
   /**
