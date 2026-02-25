@@ -858,10 +858,25 @@ function UserDashboard({ userName, userImage, onNavigateToTasks, onLogout }: any
       if (response.ok && data.data.result) {
         setAttendanceHistory(data.data.result);
 
-        // Find today's record
-        const today = new Date().toISOString().split('T')[0];
-        const todayRecord = data.data.result.find((r: any) => r.check_in.startsWith(today));
+        // CORRECCIÓN: Usar zona horaria de Perú para buscar registro de hoy
+        const peruDate = new Date().toLocaleString('es-PE', {
+          timeZone: 'America/Lima',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        // Formato: "24/02/2026" → convertir a "2026-02-24"
+        const [day, month, year] = peruDate.split('/');
+        const todayPeru = `${year}-${month}-${day}`;
+        
+        const todayRecord = data.data.result.find((r: any) => r.check_in.startsWith(todayPeru));
         setAttendanceRecord(todayRecord || null);
+        
+        console.log('Buscando registro de hoy:', {
+          fechaPeru: todayPeru,
+          registrosEncontrados: data.data.result.length,
+          registroHoy: !!todayRecord,
+        });
       } else {
         setAttendanceHistory([]);
         setAttendanceRecord(null);

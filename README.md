@@ -2,7 +2,7 @@
 
 Sistema de gestión de asistencia y tareas mediante códigos QR, integrado con Odoo ERP.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](./CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.1.0-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
@@ -47,6 +47,8 @@ Sistema de gestión de asistencia y tareas mediante códigos QR, integrado con O
 - 🚀 **Rate limiting** - Protección contra abuso
 - 🎯 **Type-safe** - TypeScript strict mode
 - 🔄 **Cliente Odoo centralizado** - Sin código duplicado
+- 📍 **GPS tracking** - Coordenadas geográficas en asistencias (v2.0.2)
+- 🔍 **Diagnóstico automático** - Detección de problemas de configuración (v2.0.2)
 
 ---
 
@@ -183,8 +185,10 @@ qr-generator/
 │   ├── api/                      # API Routes (Backend)
 │   │   ├── assistance/           # Endpoints de asistencia
 │   │   │   ├── route.ts          # GET asistencias
-│   │   │   ├── in/route.ts       # POST check-in
+│   │   │   ├── in/route.ts       # POST check-in (con GPS)
 │   │   │   └── out/route.ts      # POST check-out
+│   │   ├── diagnostic/           # Herramientas de diagnóstico
+│   │   │   └── gps-fields/       # Verificar campos GPS en Odoo
 │   │   ├── health/               # Health check
 │   │   │   └── route.ts          # GET /api/health
 │   │   ├── task/                 # Tareas completadas
@@ -219,7 +223,10 @@ qr-generator/
 ├── CHANGELOG.md                  # Registro de cambios
 ├── SETUP_INSTRUCCIONES.md        # Guía de configuración
 ├── REVISION_EXPERTO.md           # Análisis técnico (75 págs)
-└── PROPUESTAS_ESTRATEGICAS.md    # Visión estratégica
+├── PROPUESTAS_ESTRATEGICAS.md    # Visión estratégica
+├── ODOO_CAMPOS_GPS.md            # Guía campos GPS en Odoo
+├── SOLUCION_GPS.md               # Solución problema GPS (v2.0.2)
+└── create_gps_fields.sql         # Script SQL para campos GPS
 ```
 
 ---
@@ -249,6 +256,43 @@ Verifica el estado del sistema y dependencias.
 }
 ```
 
+#### 🔍 Diagnóstico
+
+**Verificar campos GPS en Odoo:**
+```http
+GET /api/diagnostic/gps-fields
+```
+
+**Response (campos OK):**
+```json
+{
+  "status": "success",
+  "message": "✅ Los campos GPS existen y tienen datos. Todo funciona correctamente.",
+  "testResults": {
+    "fieldsExist": true,
+    "hasData": true
+  }
+}
+```
+
+**Response (campos NO existen):**
+```json
+{
+  "status": "error",
+  "message": "❌ Los campos GPS NO EXISTEN en Odoo. Debes crearlos.",
+  "testResults": {
+    "fieldsExist": false,
+    "hasData": false
+  },
+  "recommendations": [
+    "1. CREAR CAMPOS GPS: Los campos no existen. Sigue la guía en ODOO_CAMPOS_GPS.md",
+    "2. MÉTODO RÁPIDO: Ejecuta el script SQL proporcionado en la documentación"
+  ]
+}
+```
+
+📖 **Ver guía completa:** [`SOLUCION_GPS.md`](./SOLUCION_GPS.md)
+
 #### 👤 Usuarios
 
 **Registrar usuario:**
@@ -271,13 +315,29 @@ POST /api/users/login
 
 #### ✅ Asistencia
 
-**Marcar entrada:**
+**Marcar entrada (con GPS):**
 ```http
 POST /api/assistance/in
 Content-Type: application/json
 
 {
-  "userId": 5
+  "userId": 5,
+  "latitude": -12.449162,
+  "longitude": -76.755698,
+  "accuracy": 79.00
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "result": 123,
+    "message": "Entrada registrada exitosamente",
+    "hasGPS": true,
+    "checkIn": "2026-02-24 19:23:01"
+  }
 }
 ```
 
@@ -433,17 +493,31 @@ const schema = z.object({
 ## 🧪 Testing
 
 ```bash
-# Unit tests (futuro)
+# Ejecutar todos los tests
 npm test
 
-# Coverage (futuro)
+# Modo watch (desarrollo)
+npm run test:watch
+
+# Con reporte de cobertura
 npm run test:coverage
 
-# E2E tests (futuro)
-npm run test:e2e
+# Para CI/CD
+npm run test:ci
 ```
 
-**Estado actual:** Tests no implementados. Ver [`PROPUESTAS_ESTRATEGICAS.md`](./PROPUESTAS_ESTRATEGICAS.md) para roadmap de testing.
+### **Tests Implementados (v2.0.1):**
+
+| Suite | Tests | Cobertura |
+|-------|-------|-----------|
+| **Date Utils** | 10 tests | Zona horaria, formatos |
+| **Odoo Client** | 11 tests | CRUD, errores, singleton |
+| **Assistance Validation** | 9 tests | Validación, auto-cierre |
+| **TOTAL** | **30 tests** | **✅ 100% pasando** |
+
+**Estado actual:** Tests unitarios implementados. Tests E2E pendientes para Sprint 4.
+
+Ver [`__tests__/`](./__tests__/) para los archivos de test.
 
 ---
 
@@ -492,9 +566,11 @@ vercel --prod
 
 - **[README.md](./README.md)** - Este archivo (Overview general)
 - **[SETUP_INSTRUCCIONES.md](./SETUP_INSTRUCCIONES.md)** - Guía de configuración paso a paso
-- **[CHANGELOG.md](./CHANGELOG.md)** - Registro de cambios (v2.0.0)
+- **[CHANGELOG.md](./CHANGELOG.md)** - Registro de cambios (v2.0.2)
 - **[REVISION_EXPERTO.md](./REVISION_EXPERTO.md)** - Análisis técnico completo (75 páginas)
 - **[PROPUESTAS_ESTRATEGICAS.md](./PROPUESTAS_ESTRATEGICAS.md)** - Visión estratégica y roadmap
+- **[ODOO_CAMPOS_GPS.md](./ODOO_CAMPOS_GPS.md)** - Guía para crear campos GPS en Odoo
+- **[SOLUCION_GPS.md](./SOLUCION_GPS.md)** - Solución problema GPS (v2.0.2)
 
 ### Documentación Técnica
 
@@ -542,26 +618,32 @@ Cada endpoint está documentado con JSDoc en su archivo.
 | Aspecto | Estado | Detalles |
 |---------|--------|----------|
 | **Seguridad** | 🟢 7/10 | Variables entorno, validación backend |
-| **Código** | 🟢 8/10 | Type-safe, sin duplicación |
-| **APIs** | 🟢 100% | 6 endpoints refactorizados |
-| **UI/UX** | 🟢 8/10 | Moderna, responsive |
-| **Tests** | 🔴 0/10 | No implementados |
+| **Código** | 🟢 8.5/10 | Type-safe, sin duplicación |
+| **APIs** | 🟢 100% | 7 endpoints funcionando |
+| **UI/UX** | 🟢 9/10 | Moderna, responsive |
+| **Tests** | 🟢 8/10 | 30 tests unitarios ✅ |
 | **Docs** | 🟢 9/10 | Completa y actualizada |
 | **Performance** | 🟡 6/10 | Mejorable (ver roadmap) |
+| **Bugs Críticos** | 🟢 0 | Todos corregidos ✅ |
+| **GPS Tracking** | 🟢 9/10 | Implementado con diagnóstico |
 
-**Versión:** 2.0.0 (Refactorización Mayor)  
-**Última actualización:** 10 de Febrero, 2026
+**Versión:** 2.0.2 (GPS Solution + Diagnostic Tools)
+**Última actualización:** 25 de Febrero, 2026
 
 ---
 
 ## 🗺️ Roadmap
 
-### Completado (v2.0) ✅
+### Completado (v2.0 - v2.0.2) ✅
 - Seguridad de credenciales
 - Cliente Odoo centralizado
 - Logging estructurado
 - Validación automática
 - Documentación completa
+- Bug fixes críticos (validación + zona horaria)
+- Tests automatizados (30 tests)
+- GPS tracking con diagnóstico automático
+- Herramientas de troubleshooting
 
 ### Próximos Sprints
 

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooAttendance, OdooError } from '@/lib/odoo-client';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 /**
@@ -7,6 +8,10 @@ import { z } from 'zod';
  *
  * Este endpoint consulta el historial de asistencias de un empleado.
  * Puede filtrar por fecha (hoy) o retornar todo el historial.
+ *
+ * MEJORA v2.0.1:
+ * - Usa zona horaria America/Lima para consultas de "hoy"
+ * - Logging detallado
  */
 
 // Schema de validación
@@ -16,6 +21,8 @@ const assistanceQuerySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const body = await req.json();
 
@@ -33,7 +40,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { userId, allHistory } = validationResult.data;
-    const today = new Date().toISOString().split('T')[0];
+    
+    // CORRECCIÓN: Usar zona horaria de Perú para fecha de hoy
+    const now = new Date();
+    const peruTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const today = `${peruTime.getFullYear()}-${pad(peruTime.getMonth() + 1)}-${pad(peruTime.getDate())}`;
     
     // Construir dominio de búsqueda
     const domain: any[] = [['employee_id', '=', userId]];
@@ -41,6 +53,13 @@ export async function POST(req: NextRequest) {
     if (!allHistory) {
       domain.push(['check_in', '>=', `${today} 00:00:00`]);
       domain.push(['check_in', '<=', `${today} 23:59:59`]);
+      
+      logger.info('Consultando asistencias del día', {
+        userId,
+        fechaPeru: today,
+      });
+    } else {
+      logger.info('Consultando historial completo de asistencias', { userId });
     }
 
     const odoo = getOdooClient();
@@ -56,6 +75,14 @@ export async function POST(req: NextRequest) {
       }
     );
 
+    const duration = Date.now() - startTime;
+    logger.info('Consulta de asistencias completada', {
+      userId,
+      registrosEncontrados: attendances.length,
+      tieneRegistroAbierto: attendances.length > 0 && !attendances[0].check_out,
+      duration: `${duration}ms`,
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -66,7 +93,10 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in assistance query route:', error);
+    const duration = Date.now() - startTime;
+    logger.error('Error en consulta de asistencias', error as Error, {
+      duration: `${duration}ms`,
+    });
 
     if (error instanceof OdooError) {
       return NextResponse.json(
