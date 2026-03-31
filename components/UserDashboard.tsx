@@ -56,31 +56,38 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
 
   const { getLocation, error: geoError } = useGeolocation();
 
-  const groupedAttendance = useMemo(() => {
-    const groups: Record<string, { totalHours: number, records: any[] }> = {};
+  const { groupedByDay, groupedByWeek } = useMemo(() => {
+    const byDay: Record<string, { totalHours: number, records: any[] }> = {};
+    const byWeek: Record<string, { totalHours: number, records: any[] }> = {};
 
-    // Sort by date desc
-    const sortedHistory = [...attendanceHistory].sort((a, b) => new Date(b.check_in).getTime() - new Date(a.check_in).getTime());
+    // Sort by date desc directly using Odoo UTC check_in strings
+    const sortedHistory = [...attendanceHistory].sort((a, b) => a.check_in > b.check_in ? -1 : 1);
 
     sortedHistory.forEach(record => {
-      const date = new Date(record.check_in);
-      const day = date.getDay();
-      const diff = date.getDate() - day;
-      const weekStart = new Date(date);
+      const limaDate = odooToLimaDate(record.check_in);
+      if (isNaN(limaDate.getTime())) return;
+
+      // Group by Day
+      const dayKey = limaDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+
+      if (!byDay[dayKey]) byDay[dayKey] = { totalHours: 0, records: [] };
+      byDay[dayKey].records.push(record);
+      byDay[dayKey].totalHours += (Number(record.worked_hours) || 0);
+
+      // Group by Week (Sunday start)
+      const dayOfWeek = limaDate.getDay();
+      const diff = limaDate.getDate() - dayOfWeek;
+      const weekStart = new Date(limaDate);
       weekStart.setDate(diff);
       weekStart.setHours(0, 0, 0, 0);
+      const weekKey = weekStart.toISOString();
 
-      const key = weekStart.toISOString();
-
-      if (!groups[key]) {
-        groups[key] = { totalHours: 0, records: [] };
-      }
-
-      groups[key].records.push(record);
-      groups[key].totalHours += (Number(record.worked_hours) || 0);
+      if (!byWeek[weekKey]) byWeek[weekKey] = { totalHours: 0, records: [] };
+      byWeek[weekKey].records.push(record);
+      byWeek[weekKey].totalHours += (Number(record.worked_hours) || 0);
     });
 
-    return groups;
+    return { groupedByDay: byDay, groupedByWeek: byWeek };
   }, [attendanceHistory]);
 
   const fetchAttendanceSummary = async () => {
@@ -500,30 +507,43 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             </div>
             <div className="max-h-[280px] overflow-y-auto pr-1 space-y-2 custom-scrollbar">
               {attendanceView === "day" ? (
-                attendanceHistory.map((record: any) => {
-                  const checkInDate = odooToLimaDate(record.check_in);
+                Object.entries(groupedByDay).map(([dayKey, { totalHours, records }]: any) => {
+                  const dayDate = new Date(dayKey + 'T12:00:00'); // Safe parsing for simple YYYY-MM-DD without timezone shifting
                   return (
-                    <div key={record.id} className="flex items-center justify-between rounded-xl bg-zinc-50/50 p-3 dark:bg-white/5">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-zinc-500">
-                          {checkInDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        </span>
-                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                          {odooToLimaTime(record.check_in)} - {record.check_out ? odooToLimaTime(record.check_out) : 'Pendiente'}
-                        </span>
+                    <div key={dayKey} className="overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm dark:border-white/5 dark:bg-zinc-900/50 mb-3">
+                      <div className="bg-zinc-50/50 p-3 dark:bg-white/5 border-b border-zinc-50 dark:border-white/5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase">
+                              {dayDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            </p>
+                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-50">{formatHoursMinutes(totalHours)} Total</p>
+                          </div>
+                          <div className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                            {records.length} registros
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-[10px] font-bold text-zinc-400">Total</span>
-                        <p className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                          {record.worked_hours ? `${Number(record.worked_hours).toFixed(1)}h` : '--'}
-                        </p>
+                      <div className="divide-y divide-zinc-50 dark:divide-white/5">
+                        {records.map((record: any) => (
+                          <div key={record.id} className="p-2.5 flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                                {odooToLimaTime(record.check_in)} - {record.check_out ? odooToLimaTime(record.check_out) : 'Pend'}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-bold text-zinc-500">
+                              {record.worked_hours ? `${Number(record.worked_hours).toFixed(1)}h` : '--'}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   );
                 })
               ) : (
-                Object.entries(groupedAttendance).map(([weekStart, { totalHours, records }]: any) => (
-                  <div key={weekStart} className="overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm dark:border-white/5 dark:bg-zinc-900/50">
+                Object.entries(groupedByWeek).map(([weekStart, { totalHours, records }]: any) => (
+                  <div key={weekStart} className="overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm dark:border-white/5 dark:bg-zinc-900/50 mb-3">
                     <div className="bg-zinc-50/50 p-3 dark:bg-white/5 border-b border-zinc-50 dark:border-white/5">
                       <div className="flex items-center justify-between">
                         <div>
@@ -538,21 +558,24 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                       </div>
                     </div>
                     <div className="divide-y divide-zinc-50 dark:divide-white/5">
-                      {records.map((record: any) => (
-                        <div key={record.id} className="p-2.5 flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-medium text-zinc-500">
-                              {new Date(record.check_in).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })}
-                            </span>
-                            <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                              {odooToLimaTime(record.check_in)} - {record.check_out ? odooToLimaTime(record.check_out) : 'Pend'}
+                      {records.map((record: any) => {
+                        const recDate = odooToLimaDate(record.check_in);
+                        return (
+                          <div key={record.id} className="p-2.5 flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-medium text-zinc-500">
+                                {recDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })}
+                              </span>
+                              <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                                {odooToLimaTime(record.check_in)} - {record.check_out ? odooToLimaTime(record.check_out) : 'Pend'}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-bold text-zinc-500">
+                              {record.worked_hours ? `${Number(record.worked_hours).toFixed(1)}h` : '--'}
                             </span>
                           </div>
-                          <span className="text-[11px] font-bold text-zinc-500">
-                            {record.worked_hours ? `${Number(record.worked_hours).toFixed(1)}h` : '--'}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))
