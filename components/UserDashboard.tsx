@@ -189,15 +189,15 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
 
   const executeAssistance = async () => {
     try {
-      setStatus({ type: 'loading', message: 'Obteniendo ubicaciÃ³n...' });
+      setStatus({ type: 'loading', message: 'Obteniendo ubicación...' });
 
-      // Obtener ubicaciÃ³n GPS
+      // Obtener ubicación GPS
       const coords = await getLocation();
 
       if (!coords) {
-        // Si hay error de geolocalizaciÃ³n, mostrar advertencia pero continuar
-        console.warn('No se pudo obtener ubicaciÃ³n:', geoError);
-        setStatus({ type: 'loading', message: 'Procesando sin ubicaciÃ³n...' });
+        // Si hay error de geolocalización, mostrar advertencia pero continuar
+        console.warn('No se pudo obtener ubicación:', geoError);
+        setStatus({ type: 'loading', message: 'Procesando sin ubicación...' });
       } else {
         setStatus({ type: 'loading', message: 'Procesando...' });
       }
@@ -211,7 +211,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const savedEID = Number(savedEIDRaw);
 
       if (isNaN(savedEID)) {
-        throw new Error("userID no es un nÃºmero vÃ¡lido");
+        throw new Error("userID no es un número válido");
       }
 
       const response = await fetch('/api/assistance', {
@@ -229,7 +229,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const now = new Date();
       const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-      // Preparar datos de ubicaciÃ³n si estÃ¡n disponibles
+      // Preparar datos de ubicación si estÃ¡n disponibles
       const locationData = coords ? {
         latitude: coords.latitude,
         longitude: coords.longitude,
@@ -252,8 +252,8 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             throw new Error(dataIn?.error || `Error del servidor (${responseIn.status}): ${textIn.slice(0, 100)}`);
           }
 
-          const locationMsg = coords ? ` (UbicaciÃ³n: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicaciÃ³n)';
-          setStatus({ type: 'success', message: `Â¡Entrada registrada a las ${timeStr}!${locationMsg}` });
+          const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
+          setStatus({ type: 'success', message: `¡Entrada registrada a las ${timeStr}!${locationMsg}` });
         } else {
           const lastRegistry = data.data.result[0];
           if (!lastRegistry.check_out) {
@@ -271,8 +271,8 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
               throw new Error(dataOut?.error || `Error del servidor (${responseOut.status}): ${textOut.slice(0, 100)}`);
             }
             console.log("Salida registrada:", dataOut);
-            const locationMsg = coords ? ` (UbicaciÃ³n: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicaciÃ³n)';
-            setStatus({ type: 'success', message: `Â¡Salida registrada a las ${timeStr}!${locationMsg}` });
+            const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
+            setStatus({ type: 'success', message: `¡Salida registrada a las ${timeStr}!${locationMsg}` });
           } else {
             const responseIn = await fetch('/api/assistance/in', {
               method: 'POST',
@@ -288,8 +288,8 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
               throw new Error(dataIn?.error || `Error del servidor (${responseIn.status}): ${textIn.slice(0, 100)}`);
             }
             console.log("Nueva entrada registrada:", dataIn);
-            const locationMsg = coords ? ` (UbicaciÃ³n: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicaciÃ³n)';
-            setStatus({ type: 'success', message: `Â¡Entrada registrada a las ${timeStr}!${locationMsg}` });
+            const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
+            setStatus({ type: 'success', message: `¡Entrada registrada a las ${timeStr}!${locationMsg}` });
           }
         }
       }
@@ -332,15 +332,15 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const tareaID = url.searchParams.get("tareaID");
 
       if (proyectoID === process.env.NEXT_PUBLIC_PROYECTO_ID && tareaID === process.env.NEXT_PUBLIC_TAREA_ID) {
-        // Es un QR de proyecto vÃ¡lido
+        // Es un QR de proyecto válido
         setShowQRScanner(false);
         executeAssistance();
       } else {
-        toast.error("El cÃ³digo QR no es vÃ¡lido para asistencia.");
+        toast.error("El cÃ³digo QR no es válido para asistencia.");
         setShowQRScanner(false);
       }
     } catch (e) {
-      toast.error("El cÃ³digo QR escaneado no es vÃ¡lido.");
+      toast.error("El cÃ³digo QR escaneado no es válido.");
       setShowQRScanner(false);
     }
   };
