@@ -41,7 +41,7 @@ export async function setSessionCookie(payload: any) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60, // 7 dÃ­as
+    maxAge: 7 * 24 * 60 * 60, // 7 dias
   });
 }
 

@@ -20,7 +20,7 @@ const adminSchema = z.object({
 
 const userSchema = z.object({
   empleado: z.string().min(1, "El ID del empleado es requerido"),
-  horas: z.string().min(1, "La hora de finalizaciÃ³n es requerida"),
+  horas: z.string().min(1, "La hora de finalizacion es requerida"),
 });
 
 type AdminFormData = z.infer<typeof adminSchema>;
@@ -260,12 +260,12 @@ function HomeContent() {
         setShowQRScanner(false);
         completeTask(taskToFinish);
       } else {
-        toast.error(`CÃ³digo QR incorrecto. Esperado: Proyecto ${taskToFinish.proyectoID}, Tarea ${taskToFinish.tareaID}`);
+        toast.error(`Codigo QR incorrecto. Esperado: Proyecto ${taskToFinish.proyectoID}, Tarea ${taskToFinish.tareaID}`);
         setShowQRScanner(false);
         setTaskToFinishId(null);
       }
     } catch (error) {
-      toast.error("El cÃ³digo QR no contiene una URL vÃlida.");
+      toast.error("El codigo QR no contiene una URL valida.");
       setShowQRScanner(false);
       setTaskToFinishId(null);
     }
@@ -280,7 +280,7 @@ function HomeContent() {
     // Prompt for description
     const descripcion = prompt("Describe el trabajo realizado:");
     if (!descripcion || descripcion.trim() === "") {
-      toast.warning("Debe proporcionar una descripciÃ³n para finalizar la tarea.");
+      toast.warning("Debe proporcionar una descripcion para finalizar la tarea.");
       setTaskToFinishId(null);
       return;
     }
@@ -392,7 +392,7 @@ function HomeContent() {
       window.URL.revokeObjectURL(url);
       toast.success("Codigo QR descargado");
     } catch (error) {
-      toast.error("Error al descargar el cÃ³digo QR");
+      toast.error("Error al descargar el codigo QR");
     }
   };
 
@@ -564,7 +564,7 @@ function HomeContent() {
                                     : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                                     }`}
                                 >
-                                  DÃ­a
+                                  Dia
                                 </button>
                                 <button
                                   onClick={() => setHistoryView("weekly")}

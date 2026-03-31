@@ -4,7 +4,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Validar payload bÃsico
+    // Validar payload basico
     if (!body.id_proyecto || !body.id_tarea || !body.id_usuario) {
       return NextResponse.json(
         { success: false, error: 'Faltan campos requeridos (proyecto, tarea o usuario)' },
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('API complete-task error:', error);
     return NextResponse.json(
-      { success: false, error: 'OcurriÃ³ un error procesando la tarea en el servidor.' },
+      { success: false, error: 'Ocurrio un error procesando la tarea en el servidor.' },
       { status: 500 }
     );
   }
