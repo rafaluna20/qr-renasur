@@ -10,15 +10,15 @@ import { z } from 'zod';
  * un nuevo registro de asistencia con check_in.
  *
  * MEJORAS v2.1:
- * - Validación correcta de registros abiertos (cualquier fecha)
+ * - Validacion correcta de registros abiertos (cualquier fecha)
  * - Auto-cierre de registros > 24 horas
  * - Logging detallado para debugging
  * - Mensajes de error descriptivos
  */
 
-// Schema de validación
+// Schema de validacion
 const checkInSchema = z.object({
-  userId: z.number().positive('userId debe ser un número positivo'),
+  userId: z.number().positive('userId debe ser un numero positivo'),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   accuracy: z.number().optional(),
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // Validar datos de entrada
     const validationResult = checkInSchema.safeParse(body);
     if (!validationResult.success) {
-      logger.warn('Validación fallida en check-in', {
+      logger.warn('Validacion fallida en check-in', {
         errors: validationResult.error.issues,
         body,
       });
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Datos de entrada inválidos',
+          error: 'Datos de entrada invalidos',
           details: validationResult.error.issues,
         },
         { status: 400 }
@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
 
     const odoo = getOdooClient();
 
-    // CORRECCIÓN CRÍTICA: Buscar CUALQUIER registro abierto, no solo de hoy
-    // Esto previene el error cuando hay registros abiertos de días anteriores
+    // CORRECCION CRITICA: Buscar CUALQUIER registro abierto, no solo de hoy
+    // Esto previene el error cuando hay registros abiertos de dias anteriores
     const existingOpen = await odoo.searchRead('hr.attendance', [
       ['employee_id', '=', userId],
       ['check_out', '=', false],
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         });
 
         try {
-          // Cerrar con el fin del día del check-in original
+          // Cerrar con el fin del dia del check-in original
           const checkInDate = openRecord.check_in.split(' ')[0];
           const autoCheckOut = `${checkInDate} 23:59:59`;
           
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
             autoCheckOut,
           });
 
-          // Continuar con el nuevo check-in después del auto-cierre
+          // Continuar con el nuevo check-in despues del auto-cierre
         } catch (closeError) {
           logger.error('Error al auto-cerrar registro antiguo', closeError as Error, {
             attendanceId: openRecord.id,
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               success: false,
-              error: 'No se pudo cerrar automáticamente tu registro anterior. Contacta al administrador.',
+              error: 'No se pudo cerrar automaticamente tu registro anterior. Contacta al administrador.',
               data: {
                 attendanceId: openRecord.id,
                 checkIn: openRecord.check_in,
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
       check_in: checkIn,
     };
 
-    // Agregar coordenadas si están disponibles
+    // Agregar coordenadas si estan disponibles
     if (latitude !== undefined && longitude !== undefined) {
       attendanceData.x_latitude = latitude;
       attendanceData.x_longitude = longitude;
@@ -183,14 +183,14 @@ export async function POST(req: NextRequest) {
         attendanceData.x_accuracy = accuracy;
       }
       
-      logger.info('Check-in con geolocalización', {
+      logger.info('Check-in con geolocalizacion', {
         userId,
         latitude: latitude.toFixed(6),
         longitude: longitude.toFixed(6),
         accuracy: accuracy?.toFixed(2),
       });
     } else {
-      logger.warn('Check-in sin geolocalización', { userId });
+      logger.warn('Check-in sin geolocalizacion', { userId });
     }
 
     logger.debug('Creando registro de asistencia', { attendanceData });
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
       let errorMessage = 'Error al comunicarse con el sistema de asistencias';
       
       if (error.message.includes('ValidationError')) {
-        errorMessage = 'Error de validación en Odoo. Verifica que no tengas un registro abierto.';
+        errorMessage = 'Error de validacion en Odoo. Verifica que no tengas un registro abierto.';
       } else if (error.message.includes('AccessError')) {
         errorMessage = 'No tienes permisos para registrar asistencia. Contacta al administrador.';
       }

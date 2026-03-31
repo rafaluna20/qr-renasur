@@ -9,9 +9,9 @@ import { z } from 'zod';
  * el registro de asistencia existente con el check_out.
  */
 
-// Schema de validación
+// Schema de validacion
 const checkOutSchema = z.object({
-  registryId: z.number().positive('registryId debe ser un número positivo'),
+  registryId: z.number().positive('registryId debe ser un numero positivo'),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   accuracy: z.number().optional(),
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Datos de entrada inválidos',
+          error: 'Datos de entrada invalidos',
           details: validationResult.error.issues,
         },
         { status: 400 }
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       check_out: checkOut,
     };
 
-    // Agregar coordenadas de salida si están disponibles
+    // Agregar coordenadas de salida si estan disponibles
     if (latitude !== undefined && longitude !== undefined) {
       updateData.x_latitude_out = latitude;
       updateData.x_longitude_out = longitude;

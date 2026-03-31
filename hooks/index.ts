@@ -1,7 +1,7 @@
 /**
  * Hooks Centralizados
  *
- * Exporta todos los hooks personalizados de la aplicación.
+ * Exporta todos los hooks personalizados de la aplicacion.
  */
 
 export { useApi, useFetch } from './useApi';

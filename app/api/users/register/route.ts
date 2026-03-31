@@ -9,12 +9,12 @@ import { z } from 'zod';
  * SEGURIDAD: Usar variables de entorno del servidor (sin NEXT_PUBLIC_)
  */
 
-// Schema de validación
+// Schema de validacion
 const registerSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  email: z.string().email('Correo electrónico inválido'),
-  phone: z.string().regex(/^9\d{8}$/, 'Teléfono debe empezar con 9 y tener 9 dígitos'),
-  dni: z.string().regex(/^\d{8}$/, 'DNI debe tener 8 dígitos'),
+  email: z.string().email('Correo electronico invalido'),
+  phone: z.string().regex(/^9\d{8}$/, 'Telefono debe empezar con 9 y tener 9 digitos'),
+  dni: z.string().regex(/^\d{8}$/, 'DNI debe tener 8 digitos'),
 });
 
 export async function POST(req: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Datos de entrada inválidos',
+          error: 'Datos de entrada invalidos',
           details: validationResult.error.issues,
         },
         { status: 400 }

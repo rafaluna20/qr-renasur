@@ -1,18 +1,18 @@
 /**
  * Constantes Centralizadas
  * 
- * Define valores constantes usados en toda la aplicación.
+ * Define valores constantes usados en toda la aplicacion.
  * Facilita mantenimiento y evita magic numbers/strings.
  */
 
 // ============================================
-// CONFIGURACIÓN DE LA APLICACIÓN
+// CONFIGURACION DE LA APLICACION
 // ============================================
 
 export const APP_CONFIG = {
   name: 'QR Generator Studio',
   version: '2.0.0',
-  description: 'Sistema de gestión de asistencia y tareas con QR',
+  description: 'Sistema de gestion de asistencia y tareas con QR',
   author: 'Tu Empresa',
 } as const;
 
@@ -31,7 +31,7 @@ export const USER_ROLES = {
 } as const;
 
 // ============================================
-// LÍMITES Y UMBRALES
+// LIMITES Y UMBRALES
 // ============================================
 
 export const LIMITS = {
@@ -39,7 +39,7 @@ export const LIMITS = {
   RATE_LIMIT_WINDOW_MS: 60 * 1000, // 1 minuto
   RATE_LIMIT_MAX_REQUESTS: 100,    // 100 requests por ventana
   
-  // Paginación
+  // Paginacion
   DEFAULT_PAGE_SIZE: 20,
   MAX_PAGE_SIZE: 100,
   
@@ -61,7 +61,7 @@ export const LIMITS = {
 } as const;
 
 // ============================================
-// CÓDIGOS DE STATUS HTTP
+// CODIGOS DE STATUS HTTP
 // ============================================
 
 export const HTTP_STATUS = {
@@ -88,34 +88,34 @@ export const HTTP_STATUS = {
 // ============================================
 
 export const ERROR_MESSAGES = {
-  // Autenticación
+  // Autenticacion
   UNAUTHORIZED: 'No autorizado',
-  INVALID_CREDENTIALS: 'Credenciales inválidas',
-  SESSION_EXPIRED: 'Sesión expirada',
+  INVALID_CREDENTIALS: 'Credenciales invalidas',
+  SESSION_EXPIRED: 'Sesion expirada',
   
-  // Validación
-  VALIDATION_ERROR: 'Datos de entrada inválidos',
+  // Validacion
+  VALIDATION_ERROR: 'Datos de entrada invalidos',
   REQUIRED_FIELD: 'Campo requerido',
-  INVALID_FORMAT: 'Formato inválido',
+  INVALID_FORMAT: 'Formato invalido',
   
   // Recursos
   NOT_FOUND: 'Recurso no encontrado',
   ALREADY_EXISTS: 'El recurso ya existe',
   
   // Rate limiting
-  TOO_MANY_REQUESTS: 'Demasiadas peticiones. Intenta de nuevo más tarde.',
+  TOO_MANY_REQUESTS: 'Demasiadas peticiones. Intenta de nuevo mas tarde.',
   
   // Servidor
   INTERNAL_ERROR: 'Error interno del servidor',
   SERVICE_UNAVAILABLE: 'Servicio no disponible',
   
-  // Odoo específico
-  ODOO_CONNECTION_ERROR: 'Error de conexión con Odoo',
-  ODOO_AUTHENTICATION_ERROR: 'Error de autenticación con Odoo',
+  // Odoo especifico
+  ODOO_CONNECTION_ERROR: 'Error de conexion con Odoo',
+  ODOO_AUTHENTICATION_ERROR: 'Error de autenticacion con Odoo',
 } as const;
 
 // ============================================
-// MENSAJES DE ÉXITO
+// MENSAJES DE EXITO
 // ============================================
 
 export const SUCCESS_MESSAGES = {
@@ -124,8 +124,8 @@ export const SUCCESS_MESSAGES = {
   DELETED: 'Eliminado exitosamente',
   
   USER_REGISTERED: 'Usuario registrado exitosamente',
-  LOGIN_SUCCESS: 'Inicio de sesión exitoso',
-  LOGOUT_SUCCESS: 'Cierre de sesión exitoso',
+  LOGIN_SUCCESS: 'Inicio de sesion exitoso',
+  LOGOUT_SUCCESS: 'Cierre de sesion exitoso',
   
   ATTENDANCE_CHECKED_IN: 'Entrada registrada exitosamente',
   ATTENDANCE_CHECKED_OUT: 'Salida registrada exitosamente',
@@ -139,7 +139,7 @@ export const SUCCESS_MESSAGES = {
 // ============================================
 
 export const STORAGE_KEYS = {
-  // Autenticación
+  // Autenticacion
   IS_AUTHENTICATED: 'isAuthenticated',
   USER_ROLE: 'userRole',
   USER_EMAIL: 'userEmail',
@@ -161,11 +161,11 @@ export const STORAGE_KEYS = {
 } as const;
 
 // ============================================
-// RUTAS DE LA APLICACIÓN
+// RUTAS DE LA APLICACION
 // ============================================
 
 export const ROUTES = {
-  // Públicas
+  // Publicas
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
@@ -208,7 +208,7 @@ export const ODOO_MODELS = {
 // ============================================
 
 export const REGEX_PATTERNS = {
-  // Perú específico
+  // Peru especifico
   DNI: /^\d{8}$/,
   PHONE: /^9\d{8}$/,
   
@@ -260,7 +260,7 @@ export const TIME_INTERVALS = {
 } as const;
 
 // ============================================
-// CONFIGURACIÓN DE QR
+// CONFIGURACION DE QR
 // ============================================
 
 export const QR_CONFIG = {
@@ -281,7 +281,7 @@ export const THEMES = {
 } as const;
 
 // ============================================
-// TIPOS DE NOTIFICACIÓN
+// TIPOS DE NOTIFICACION
 // ============================================
 
 export const NOTIFICATION_TYPES = {
@@ -318,14 +318,14 @@ export function getApiUrl(endpoint: string): string {
 }
 
 /**
- * Verificar si está en producción
+ * Verificar si esta en produccion
  */
 export function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
 }
 
 /**
- * Verificar si está en desarrollo
+ * Verificar si esta en desarrollo
  */
 export function isDevelopment(): boolean {
   return process.env.NODE_ENV === 'development';

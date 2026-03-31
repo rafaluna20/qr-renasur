@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
  * Health Check Endpoint
  * 
  * Verifica el estado de salud del sistema y sus dependencias.
- * Útil para:
+ * Util para:
  * - Kubernetes liveness/readiness probes
  * - Monitoreo de uptime
  * - CI/CD health checks
@@ -33,7 +33,7 @@ interface CheckStatus {
 }
 
 /**
- * Verificar conexión con Odoo
+ * Verificar conexion con Odoo
  */
 async function checkOdoo(): Promise<CheckStatus> {
   const start = Date.now();
@@ -41,8 +41,8 @@ async function checkOdoo(): Promise<CheckStatus> {
   try {
     const odoo = getOdooClient();
     
-    // Intentar una operación simple (obtener versión)
-    // En lugar de hacer una query real, solo verificamos que el cliente se inicializó
+    // Intentar una operacion simple (obtener version)
+    // En lugar de hacer una query real, solo verificamos que el cliente se inicializo
     if (!odoo) {
       return {
         status: 'down',
@@ -82,7 +82,7 @@ async function checkOdoo(): Promise<CheckStatus> {
 }
 
 /**
- * Verificar variables de entorno críticas
+ * Verificar variables de entorno criticas
  */
 function checkEnvironment(): CheckStatus {
   const requiredVars = [
@@ -108,7 +108,7 @@ function checkEnvironment(): CheckStatus {
 }
 
 /**
- * GET /api/health - Health check básico
+ * GET /api/health - Health check basico
  */
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
       logger.warn('Health check failed', { status, checks });
     }
 
-    // Retornar código apropiado
+    // Retornar codigo apropiado
     const httpStatus = status === 'healthy' ? 200 : status === 'degraded' ? 200 : 503;
 
     return NextResponse.json(result, { status: httpStatus });
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
     logger.error('Health check endpoint error', error as Error);
     
     return errorResponse(
-      'Health check falló',
+      'Health check fallo',
       error instanceof Error ? error.message : undefined,
       503
     );
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * HEAD /api/health - Lightweight health check
- * Solo retorna status code sin body (más rápido)
+ * Solo retorna status code sin body (mas rapido)
  */
 export async function HEAD(req: NextRequest) {
   try {

@@ -1,8 +1,8 @@
 /**
- * Índice central de utilidades
+ * Indice central de utilidades
  * 
  * Exporta todas las utilidades del directorio lib/
- * para facilitar imports en el resto de la aplicación.
+ * para facilitar imports en el resto de la aplicacion.
  */
 
 // Odoo Client

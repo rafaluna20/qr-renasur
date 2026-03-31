@@ -5,9 +5,9 @@ import { getOdooClient, OdooEmployee, OdooError } from '@/lib/odoo-client';
  * API Route: Obtener Lista de Usuarios/Empleados
  *
  * Este endpoint retorna todos los empleados activos de Odoo.
- * Usado para validación de login en el cliente.
+ * Usado para validacion de login en el cliente.
  *
- * NOTA: En producción, este endpoint debería requerir autenticación
+ * NOTA: En produccion, este endpoint deberia requerir autenticacion
  * y no exponer todos los usuarios.
  */
 

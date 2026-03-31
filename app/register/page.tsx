@@ -7,9 +7,9 @@ import { z } from "zod";
 
 const registerSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  email: z.string().email("Correo electrónico inválido"),
-  dni: z.string().regex(/^\d{8}$/, "El DNI debe tener 8 dígitos"),
-  phone: z.string().regex(/^9\d{8}$/, "El teléfono debe empezar con 9 y tener 9 dígitos"),
+  email: z.string().email("Correo electronico invalido"),
+  dni: z.string().regex(/^\d{8}$/, "El DNI debe tener 8 digitos"),
+  phone: z.string().regex(/^9\d{8}$/, "El telefono debe empezar con 9 y tener 9 digitos"),
   role: z.enum(["admin", "user"]),
 });
 
@@ -70,7 +70,7 @@ export default function RegisterPage() {
               Crear Cuenta
             </h1>
             <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              Únete a QR Generator Studio
+              Unete a QR Generator Studio
             </p>
           </div>
 
@@ -105,7 +105,7 @@ export default function RegisterPage() {
                 className={`flex h-11 w-full rounded-xl border bg-transparent px-4 py-2 text-sm transition-all focus:outline-none focus:ring-1 ${
                   errors.name ? "border-red-500 ring-red-500" : "border-zinc-200 focus:border-black focus:ring-black dark:border-zinc-800 dark:focus:border-white"
                 }`}
-                placeholder="Juan Pérez"
+                placeholder="Juan Perez"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
@@ -114,7 +114,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Correo Electrónico
+                Correo Electronico
               </label>
               <input
                 type="email"
@@ -147,7 +147,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Teléfono
+                Telefono
               </label>
               <input
                 type="text"
@@ -172,9 +172,9 @@ export default function RegisterPage() {
           </form>
 
           <p className="mt-8 text-center text-sm text-zinc-500">
-            ¿Ya tienes una cuenta?{" "}
+            Ya tienes una cuenta?{" "}
             <Link href="/login" className="font-semibold text-black hover:underline dark:text-white">
-              Inicia sesión aquí
+              Inicia sesion aqui
             </Link>
           </p>
         </div>

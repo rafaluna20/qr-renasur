@@ -5,8 +5,8 @@ import { verifySession } from './lib/session';
 export async function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('terra_session')?.value;
   
-  // Excluir rutas públicas y estáticas directamente en el matcher de preferencia, 
-  // pero aseguramos también en código.
+  // Excluir rutas publicas y estaticas directamente en el matcher de preferencia, 
+  // pero aseguramos tambien en codigo.
   const path = request.nextUrl.pathname;
   if (
     path.startsWith('/_next') ||
@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Rutas privadas aseguran que haya sesión
+  // Rutas privadas aseguran que haya sesion
   if (!sessionCookie) {
     return NextResponse.redirect(new URL('/login', request.url));
   }

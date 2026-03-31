@@ -1,5 +1,5 @@
 /**
- * Middleware de Validación de Requests
+ * Middleware de Validacion de Requests
  * 
  * Proporciona funciones para validar y sanitizar
  * datos de entrada en API routes.
@@ -21,14 +21,14 @@ export async function validateRequestBody<T>(
     return schema.parse(body);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error('JSON inválido en el body del request');
+      throw new Error('JSON invalido en el body del request');
     }
     throw error;
   }
 }
 
 /**
- * Extraer metadata útil del request
+ * Extraer metadata util del request
  */
 export function extractRequestMetadata(req: NextRequest) {
   // Extraer IP de headers (Next.js no expone req.ip directamente)
@@ -46,7 +46,7 @@ export function extractRequestMetadata(req: NextRequest) {
 }
 
 /**
- * Verificar que el método HTTP es el correcto
+ * Verificar que el metodo HTTP es el correcto
  */
 export function validateMethod(
   req: NextRequest,
@@ -57,7 +57,7 @@ export function validateMethod(
 
 /**
  * Rate limiting simple (en memoria)
- * NOTA: En producción usar Redis o servicio externo
+ * NOTA: En produccion usar Redis o servicio externo
  */
 class InMemoryRateLimiter {
   private requests: Map<string, number[]> = new Map();
@@ -79,7 +79,7 @@ class InMemoryRateLimiter {
     // Filtrar requests fuera de la ventana
     requestTimestamps = requestTimestamps.filter(ts => ts > windowStart);
 
-    // Verificar límite
+    // Verificar limite
     if (requestTimestamps.length >= this.maxRequests) {
       this.requests.set(identifier, requestTimestamps);
       return {
@@ -88,7 +88,7 @@ class InMemoryRateLimiter {
       };
     }
 
-    // Añadir nuevo request
+    // Anadir nuevo request
     requestTimestamps.push(now);
     this.requests.set(identifier, requestTimestamps);
 
@@ -98,7 +98,7 @@ class InMemoryRateLimiter {
     };
   }
 
-  // Limpiar requests antiguos periódicamente
+  // Limpiar requests antiguos periodicamente
   cleanup(): void {
     const now = Date.now();
     const windowStart = now - this.windowMs;
@@ -114,7 +114,7 @@ class InMemoryRateLimiter {
   }
 }
 
-// Instancia global (en producción, usar Redis)
+// Instancia global (en produccion, usar Redis)
 const globalRateLimiter = new InMemoryRateLimiter(60000, 100);
 
 // Cleanup cada 5 minutos
@@ -151,36 +151,36 @@ export function checkRateLimit(
 }
 
 /**
- * Schemas de validación comunes
+ * Schemas de validacion comunes
  */
 export const commonSchemas = {
   /**
-   * ID numérico positivo
+   * ID numerico positivo
    */
-  positiveId: z.number().positive('ID debe ser un número positivo'),
+  positiveId: z.number().positive('ID debe ser un numero positivo'),
 
   /**
    * ID que puede ser string o number
    */
   flexibleId: z.union([
     z.number().positive(),
-    z.string().regex(/^\d+$/, 'ID debe ser numérico')
+    z.string().regex(/^\d+$/, 'ID debe ser numerico')
   ]).transform(val => Number(val)),
 
   /**
-   * Email válido
+   * Email valido
    */
-  email: z.string().email('Email inválido'),
+  email: z.string().email('Email invalido'),
 
   /**
-   * DNI peruano (8 dígitos)
+   * DNI peruano (8 digitos)
    */
-  dni: z.string().regex(/^\d{8}$/, 'DNI debe tener 8 dígitos'),
+  dni: z.string().regex(/^\d{8}$/, 'DNI debe tener 8 digitos'),
 
   /**
-   * Teléfono peruano (9 dígitos, empieza con 9)
+   * Telefono peruano (9 digitos, empieza con 9)
    */
-  phone: z.string().regex(/^9\d{8}$/, 'Teléfono debe empezar con 9 y tener 9 dígitos'),
+  phone: z.string().regex(/^9\d{8}$/, 'Telefono debe empezar con 9 y tener 9 digitos'),
 
   /**
    * Fecha ISO 8601
@@ -197,7 +197,7 @@ export const commonSchemas = {
   ]),
 
   /**
-   * Paginación
+   * Paginacion
    */
   pagination: z.object({
     page: z.number().positive().default(1),
@@ -206,7 +206,7 @@ export const commonSchemas = {
 };
 
 /**
- * Sanitizar string (prevenir XSS básico)
+ * Sanitizar string (prevenir XSS basico)
  */
 export function sanitizeString(str: string): string {
   return str
@@ -226,7 +226,7 @@ export function validateContentType(
 }
 
 /**
- * Logger de validación
+ * Logger de validacion
  */
 export function logValidationError(
   req: NextRequest,

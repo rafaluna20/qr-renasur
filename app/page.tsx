@@ -265,7 +265,7 @@ function HomeContent() {
         setTaskToFinishId(null);
       }
     } catch (error) {
-      toast.error("El cÃ³digo QR no contiene una URL vÃ¡lida.");
+      toast.error("El cÃ³digo QR no contiene una URL vÃlida.");
       setShowQRScanner(false);
       setTaskToFinishId(null);
     }
@@ -390,7 +390,7 @@ function HomeContent() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("Código QR descargado");
+      toast.success("Codigo QR descargado");
     } catch (error) {
       toast.error("Error al descargar el cÃ³digo QR");
     }
@@ -449,7 +449,7 @@ function HomeContent() {
                       onClick={handleLogout}
                       className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
                     >
-                      Cerrar Sesión
+                      Cerrar Sesion
                     </button>
                   </div>
                 </div>
@@ -695,7 +695,7 @@ function HomeContent() {
                           "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                         } disabled:opacity-50`}
                     >
-                      {isSubmitted ? "Â¡Tarea Iniciada!" : missingIds ? "Tarea Bloqueada" : "Iniciar Tarea"}
+                      {isSubmitted ? "ÂTarea Iniciada!" : missingIds ? "Tarea Bloqueada" : "Iniciar Tarea"}
                     </button>
                   </form>
                 )}

@@ -14,9 +14,9 @@ import { z } from 'zod';
  * - Logging detallado
  */
 
-// Schema de validación
+// Schema de validacion
 const assistanceQuerySchema = z.object({
-  userId: z.number().positive('userId debe ser un número positivo'),
+  userId: z.number().positive('userId debe ser un numero positivo'),
   allHistory: z.boolean().optional().default(false),
 });
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Datos de entrada inválidos',
+          error: 'Datos de entrada invalidos',
           details: validationResult.error.issues,
         },
         { status: 400 }
@@ -41,20 +41,20 @@ export async function POST(req: NextRequest) {
 
     const { userId, allHistory } = validationResult.data;
     
-    // CORRECCIÓN: Usar zona horaria de Perú para fecha de hoy
+    // CORRECCION: Usar zona horaria de Peru para fecha de hoy
     const now = new Date();
     const peruTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
     const pad = (n: number) => String(n).padStart(2, '0');
     const today = `${peruTime.getFullYear()}-${pad(peruTime.getMonth() + 1)}-${pad(peruTime.getDate())}`;
     
-    // Construir dominio de búsqueda
+    // Construir dominio de busqueda
     const domain: any[] = [['employee_id', '=', userId]];
     
     if (!allHistory) {
       domain.push(['check_in', '>=', `${today} 00:00:00`]);
       domain.push(['check_in', '<=', `${today} 23:59:59`]);
       
-      logger.info('Consultando asistencias del día', {
+      logger.info('Consultando asistencias del dia', {
         userId,
         fechaPeru: today,
       });

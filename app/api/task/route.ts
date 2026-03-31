@@ -3,8 +3,8 @@ import { getOdooClient, OdooAnalyticLine } from '@/lib/odoo-client';
 import { z } from 'zod';
 
 /**
- * API Route: Consultar Líneas Analíticas (Horas registradas)
- * Requiere módulo hr_timesheet instalado en Odoo para tener
+ * API Route: Consultar Lineas Analiticas (Horas registradas)
+ * Requiere modulo hr_timesheet instalado en Odoo para tener
  * los campos employee_id, project_id y task_id.
  */
 
@@ -20,14 +20,14 @@ export async function POST(req: NextRequest) {
     const validationResult = taskQuerySchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { success: false, error: 'Datos de entrada inválidos', details: validationResult.error.issues },
+        { success: false, error: 'Datos de entrada invalidos', details: validationResult.error.issues },
         { status: 400 }
       );
     }
 
     const { userId, limit } = validationResult.data;
 
-    // Si userId es 0 o inválido (ej: rol admin), retornar vacío directamente
+    // Si userId es 0 o invalido (ej: rol admin), retornar vacio directamente
     if (!userId || userId <= 0) {
       return NextResponse.json({ success: true, data: { result: [], count: 0 } });
     }

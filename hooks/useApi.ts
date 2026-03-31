@@ -2,7 +2,7 @@
  * Hook: useApi
  * 
  * Hook personalizado para hacer requests a la API con manejo
- * automático de loading, error, y success states.
+ * automatico de loading, error, y success states.
  */
 
 import { useState, useCallback } from 'react';

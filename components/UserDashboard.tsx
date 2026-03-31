@@ -174,7 +174,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
         toast.error("Error: " + data.error);
       }
     } catch (e) {
-      toast.error("Error de conexión al guardar la accion.");
+      toast.error("Error de conexion al guardar la accion.");
     } finally {
       setActionLoading(false);
     }
@@ -211,7 +211,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const savedEID = Number(savedEIDRaw);
 
       if (isNaN(savedEID)) {
-        throw new Error("userID no es un número válido");
+        throw new Error("userID no es un numero valido");
       }
 
       const response = await fetch('/api/assistance', {
@@ -229,7 +229,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const now = new Date();
       const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-      // Preparar datos de ubicación si están disponibles
+      // Preparar datos de ubicacion si estan disponibles
       const locationData = coords ? {
         latitude: coords.latitude,
         longitude: coords.longitude,
@@ -332,15 +332,15 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const tareaID = url.searchParams.get("tareaID");
 
       if (proyectoID === process.env.NEXT_PUBLIC_PROYECTO_ID && tareaID === process.env.NEXT_PUBLIC_TAREA_ID) {
-        // Es un QR de proyecto válido
+        // Es un QR de proyecto valido
         setShowQRScanner(false);
         executeAssistance();
       } else {
-        toast.error("El cÃ³digo QR no es válido para asistencia.");
+        toast.error("El cÃ³digo QR no es valido para asistencia.");
         setShowQRScanner(false);
       }
     } catch (e) {
-      toast.error("El cÃ³digo QR escaneado no es válido.");
+      toast.error("El cÃ³digo QR escaneado no es valido.");
       setShowQRScanner(false);
     }
   };
@@ -489,7 +489,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                   className={`rounded-md px-2 py-1 text-[10px] font-bold transition-all ${attendanceView === "day"
                     ? "bg-white text-black shadow-sm dark:bg-zinc-700 dark:text-white"
                     : "text-zinc-500"}`}
-                >Día</button>
+                >Dia</button>
                 <button
                   onClick={() => setAttendanceView("week")}
                   className={`rounded-md px-2 py-1 text-[10px] font-bold transition-all ${attendanceView === "week"
@@ -717,7 +717,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                               }}
                               className="flex-1 rounded-xl bg-blue-500 py-2.5 text-xs font-bold text-white transition-all hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.98]"
                             >
-                              Subsanar Observación
+                              Subsanar Observacion
                             </button>
                           </div>
                         )}
@@ -731,7 +731,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                   if (cuadernoFilter === 'rejected') return a.state === 'rejected';
                   return true;
                 }).length === 0 && (
-                    <p className="text-center text-xs text-zinc-400 italic py-4">Sin asientos en esta categoría</p>
+                    <p className="text-center text-xs text-zinc-400 italic py-4">Sin asientos en esta categoria</p>
                   )}
               </div>
             </div>
@@ -744,19 +744,19 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-[30px] bg-white p-6 shadow-2xl dark:bg-zinc-900 border border-zinc-100 dark:border-white/5">
             <h3 className={`text-xl font-bold ${actionType === 'reject' ? 'text-red-500' : actionType === 'resolve' ? 'text-blue-500' : 'text-green-500'}`}>
-              {actionType === 'approve' ? 'Aprobar Asiento' : actionType === 'resolve' ? 'Subsanar Observación' : 'Observar Asiento'}
+              {actionType === 'approve' ? 'Aprobar Asiento' : actionType === 'resolve' ? 'Subsanar Observacion' : 'Observar Asiento'}
             </h3>
             <p className="mt-2 text-sm text-zinc-500">
               {actionType === 'approve'
-                ? 'El asiento cambiará al estado "Aprobado". Puedes dejar un comentario opcional.'
+                ? 'El asiento cambiara al estado "Aprobado". Puedes dejar un comentario opcional.'
                 : actionType === 'resolve'
-                  ? 'Firma para subsanar la observación y devolver el asiento a revisión.'
-                  : 'El asiento cambiará al estado "Rechazado". Debes ingresar el motivo de forma obligatoria.'}
+                  ? 'Firma para subsanar la observacion y devolver el asiento a revision.'
+                  : 'El asiento cambiara al estado "Rechazado". Debes ingresar el motivo de forma obligatoria.'}
             </p>
 
             <textarea
               className="mt-4 w-full rounded-2xl border-0 bg-zinc-50 p-4 text-sm focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:bg-white/5 dark:text-white dark:focus:ring-indigo-400"
-              placeholder={actionType === 'approve' ? 'Comentario (opcional)...' : actionType === 'resolve' ? 'Detalle de validación o subsanación...' : 'Motivo de observación (requerido)...'}
+              placeholder={actionType === 'approve' ? 'Comentario (opcional)...' : actionType === 'resolve' ? 'Detalle de validacion o subsanacion...' : 'Motivo de observacion (requerido)...'}
               rows={4}
               value={actionObservacion}
               onChange={(e) => setActionObservacion(e.target.value)}
@@ -823,7 +823,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
         onClick={onLogout}
         className="w-full rounded-2xl py-4 text-xs font-bold text-zinc-400 hover:text-red-500 transition-colors"
       >
-        Cerrar Sesión
+        Cerrar Sesion
       </button>
     </div>
   );

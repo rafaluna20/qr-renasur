@@ -5,7 +5,7 @@
  */
 
 // ============================================
-// RESPONSE GENÉRICOS
+// RESPONSE GENERICOS
 // ============================================
 
 export interface APISuccessResponse<T = any> {

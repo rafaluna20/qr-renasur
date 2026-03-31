@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
         const odoo = getOdooClient();
 
-        // Llamar al método del modelo. Pasamos el ID del asiento, y la observación (puede ser string vacío).
+        // Llamar al metodo del modelo. Pasamos el ID del asiento, y la observacion (puede ser string vacio).
         await odoo.execute_kw(
             'obra.cuaderno.asiento',
             'action_approve_supervisor',

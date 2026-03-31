@@ -1,7 +1,7 @@
 /**
  * Hook: useGeolocation
  * 
- * Hook personalizado para obtener la geolocalización del usuario
+ * Hook personalizado para obtener la geolocalizacion del usuario
  * usando la API de Geolocation del navegador.
  * 
  * @example
@@ -39,16 +39,16 @@ interface UseGeolocationReturn {
 }
 
 /**
- * Opciones de configuración para la geolocalización
+ * Opciones de configuracion para la geolocalizacion
  */
 const GEOLOCATION_OPTIONS: PositionOptions = {
-  enableHighAccuracy: true, // Usar GPS si está disponible
+  enableHighAccuracy: true, // Usar GPS si esta disponible
   timeout: 10000, // 10 segundos de timeout
-  maximumAge: 0, // No usar caché
+  maximumAge: 0, // No usar cache
 };
 
 /**
- * Hook para obtener la ubicación del usuario
+ * Hook para obtener la ubicacion del usuario
  */
 export function useGeolocation(): UseGeolocationReturn {
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
@@ -56,12 +56,12 @@ export function useGeolocation(): UseGeolocationReturn {
   const [loading, setLoading] = useState<boolean>(false);
 
   /**
-   * Obtener la ubicación actual del usuario
+   * Obtener la ubicacion actual del usuario
    */
   const getLocation = useCallback(async (): Promise<Coordinates | null> => {
-    // Verificar si el navegador soporta geolocalización
+    // Verificar si el navegador soporta geolocalizacion
     if (!navigator.geolocation) {
-      const errorMsg = 'Tu navegador no soporta geolocalización';
+      const errorMsg = 'Tu navegador no soporta geolocalizacion';
       setError(errorMsg);
       return null;
     }
@@ -95,24 +95,24 @@ export function useGeolocation(): UseGeolocationReturn {
       setLoading(false);
       return coords;
     } catch (err) {
-      let errorMessage = 'Error desconocido al obtener ubicación';
+      let errorMessage = 'Error desconocido al obtener ubicacion';
 
       if (err instanceof GeolocationPositionError) {
         switch (err.code) {
           case err.PERMISSION_DENIED:
             errorMessage =
-              'Permiso de ubicación denegado. Por favor, permite el acceso a tu ubicación en la configuración del navegador.';
+              'Permiso de ubicacion denegado. Por favor, permite el acceso a tu ubicacion en la configuracion del navegador.';
             break;
           case err.POSITION_UNAVAILABLE:
             errorMessage =
-              'Información de ubicación no disponible. Verifica tu conexión GPS/WiFi.';
+              'Informacion de ubicacion no disponible. Verifica tu conexion GPS/WiFi.';
             break;
           case err.TIMEOUT:
             errorMessage =
-              'Tiempo de espera agotado al obtener la ubicación. Intenta nuevamente.';
+              'Tiempo de espera agotado al obtener la ubicacion. Intenta nuevamente.';
             break;
           default:
-            errorMessage = `Error de geolocalización: ${err.message}`;
+            errorMessage = `Error de geolocalizacion: ${err.message}`;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;
@@ -141,7 +141,7 @@ export function useGeolocation(): UseGeolocationReturn {
 }
 
 /**
- * Utilidad: Calcular distancia entre dos coordenadas (fórmula de Haversine)
+ * Utilidad: Calcular distancia entre dos coordenadas (formula de Haversine)
  * @param lat1 Latitud del primer punto
  * @param lon1 Longitud del primer punto
  * @param lat2 Latitud del segundo punto

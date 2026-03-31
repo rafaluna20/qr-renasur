@@ -10,12 +10,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Falta ID del Asiento' }, { status: 400 });
         }
         if (!observacion) {
-            return NextResponse.json({ success: false, error: 'Falta el texto de subsanación' }, { status: 400 });
+            return NextResponse.json({ success: false, error: 'Falta el texto de subsanacion' }, { status: 400 });
         }
 
         const odoo = getOdooClient();
 
-        // Ejecutar el método directamente en Odoo
+        // Ejecutar el metodo directamente en Odoo
         const result = await odoo.execute_kw('obra.cuaderno.asiento', 'action_resolve', [[id]], {
             observacion: observacion
         });

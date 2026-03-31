@@ -40,7 +40,7 @@ export function createdResponse<T = any>(
 }
 
 /**
- * Response de error genérico
+ * Response de error generico
  */
 export function errorResponse(
   message: string,
@@ -61,10 +61,10 @@ export function errorResponse(
 }
 
 /**
- * Response de validación fallida (400 Bad Request)
+ * Response de validacion fallida (400 Bad Request)
  */
 export function validationErrorResponse(
-  message: string = 'Datos de entrada inválidos',
+  message: string = 'Datos de entrada invalidos',
   errors: any
 ) {
   return errorResponse(message, errors, 400);
@@ -108,7 +108,7 @@ export function conflictResponse(
 }
 
 /**
- * Response de método no permitido (405 Method Not Allowed)
+ * Response de metodo no permitido (405 Method Not Allowed)
  */
 export function methodNotAllowedResponse(
   allowedMethods: string[] = []
@@ -116,7 +116,7 @@ export function methodNotAllowedResponse(
   return NextResponse.json(
     {
       success: false,
-      error: 'Método HTTP no permitido',
+      error: 'Metodo HTTP no permitido',
       allowedMethods,
       timestamp: new Date().toISOString(),
     },
@@ -130,13 +130,13 @@ export function methodNotAllowedResponse(
 }
 
 /**
- * Manejo automático de errores comunes
+ * Manejo automatico de errores comunes
  */
 export function handleAPIError(error: unknown): NextResponse {
-  // Error de validación Zod
+  // Error de validacion Zod
   if (error instanceof ZodError) {
     return validationErrorResponse(
-      'Datos de entrada inválidos',
+      'Datos de entrada invalidos',
       error.issues.map(issue => ({
         path: issue.path.join('.'),
         message: issue.message,
@@ -152,7 +152,7 @@ export function handleAPIError(error: unknown): NextResponse {
     });
 
     return errorResponse(
-      'Error en la comunicación con Odoo',
+      'Error en la comunicacion con Odoo',
       {
         message: error.message,
         code: error.code,
@@ -161,11 +161,11 @@ export function handleAPIError(error: unknown): NextResponse {
     );
   }
 
-  // Error estándar
+  // Error estandar
   if (error instanceof Error) {
     logger.error('Unhandled error', error);
 
-    // No exponer detalles internos en producción
+    // No exponer detalles internos en produccion
     const details = process.env.NODE_ENV === 'production' 
       ? undefined 
       : { message: error.message, stack: error.stack };

@@ -26,14 +26,14 @@ export async function POST(req: Request) {
 
     const user = employees[0];
 
-    // Validar contraseña (DNI)
+    // Validar contrasena (DNI)
     if (user.identification_id !== password) {
-      return NextResponse.json({ success: false, error: 'Contraseña incorrecta' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Contrasena incorrecta' }, { status: 401 });
     }
 
     const obraRole = user.x_obra_role || 'employee';
 
-    // Crear sesión HTTP-Only
+    // Crear sesion HTTP-Only
     await setSessionCookie({
       id: user.id,
       email: user.work_email,

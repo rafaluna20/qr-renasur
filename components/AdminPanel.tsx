@@ -46,7 +46,7 @@ export default function AdminPanel({
               "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
               } disabled:opacity-50`}
           >
-            {isSubmitted ? "    ¡Código Generado!" : "Generar QR de Proyecto"}
+            {isSubmitted ? "    Codigo Generado!" : "Generar QR de Proyecto"}
           </button>
         </form>
       ) : (

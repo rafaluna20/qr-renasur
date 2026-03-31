@@ -57,7 +57,7 @@ export default function QRScannerModal({
       setError(null);
     } catch (err: any) {
       console.error("Error starting scanner:", err);
-      setError("No se pudo acceder a la cámara. Verifique los permisos.");
+      setError("No se pudo acceder a la camara. Verifique los permisos.");
       onScanError();
     }
   };
@@ -88,7 +88,7 @@ export default function QRScannerModal({
         <div className="p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-              Escanear Código QR
+              Escanear Codigo QR
             </h2>
             <button
               onClick={handleClose}
@@ -112,7 +112,7 @@ export default function QRScannerModal({
           </div>
 
           <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
-            Escanee el código QR del proyecto/tarea para verificar antes de
+            Escanee el codigo QR del proyecto/tarea para verificar antes de
             finalizar.
           </p>
 

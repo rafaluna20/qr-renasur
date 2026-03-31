@@ -1,7 +1,7 @@
 /**
  * Hook: useDebounce
  * 
- * Hook para debounce de valores, útil para búsquedas y validaciones.
+ * Hook para debounce de valores, util para busquedas y validaciones.
  */
 
 import { useState, useEffect } from 'react';
@@ -26,7 +26,7 @@ export function useDebounce<T>(value: T, delay: number = 500): T {
 }
 
 /**
- * Hook para debounce de una función
+ * Hook para debounce de una funcion
  */
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,

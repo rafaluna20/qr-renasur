@@ -4,7 +4,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Validar payload bÃ¡sico
+    // Validar payload bÃsico
     if (!body.id_proyecto || !body.id_tarea || !body.id_usuario) {
       return NextResponse.json(
         { success: false, error: 'Faltan campos requeridos (proyecto, tarea o usuario)' },

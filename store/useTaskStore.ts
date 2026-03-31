@@ -18,7 +18,7 @@ export interface CompletedTask {
   project_id: [number, string];
   date: string;
   unit_amount: number;
-  // Añadir más campos según responda el backend de Odoo
+  // Anadir mas campos segun responda el backend de Odoo
 }
 
 interface TaskState {
@@ -44,8 +44,8 @@ export const useTaskStore = create<TaskState>()(
     }),
     {
       name: 'terra-field-task-storage',
-      // Solo persistimos las tareas activas en localStorage para sincronización,
-      // completedTasks típicamente se hace fetch del servidor
+      // Solo persistimos las tareas activas en localStorage para sincronizacion,
+      // completedTasks tipicamente se hace fetch del servidor
       partialize: (state) => ({ activeTasks: state.activeTasks }),
     }
   )

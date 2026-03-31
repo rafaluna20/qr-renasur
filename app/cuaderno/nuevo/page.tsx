@@ -105,7 +105,7 @@ function NuevoAsientoContent() {
         const remaining = await getUnsyncedAsientos();
         setUnsyncedCount(remaining.length);
         if (result.success) alert(`Sincronizados ${result.synced} asientos.`);
-        else alert('Error en la sincronización.');
+        else alert('Error en la sincronizacion.');
     };
 
     return (
@@ -137,7 +137,7 @@ function NuevoAsientoContent() {
                     </div>
 
                     <form onSubmit={handleSave} className="space-y-8">
-                        {/* Información Base */}
+                        {/* Informacion Base */}
                         <div className="grid gap-6 rounded-[30px] border border-zinc-100 bg-zinc-50/50 p-6 dark:border-white/5 dark:bg-white/5">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -155,7 +155,7 @@ function NuevoAsientoContent() {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                                    Clima del Día
+                                    Clima del Dia
                                 </label>
                                 <select
                                     value={clima}
@@ -185,7 +185,7 @@ function NuevoAsientoContent() {
                             />
                         </div>
 
-                        {/* Fotografías */}
+                        {/* Fotografias */}
                         <div className="space-y-4 pt-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -203,7 +203,7 @@ function NuevoAsientoContent() {
                                 <p className="mt-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                                     Toca para tomar foto
                                 </p>
-                                <p className="mt-1 text-xs text-zinc-500">Puedes subir múltiples imágenes</p>
+                                <p className="mt-1 text-xs text-zinc-500">Puedes subir multiples imagenes</p>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -229,7 +229,7 @@ function NuevoAsientoContent() {
                         <div className="flex flex-col gap-2 rounded-2xl bg-blue-50/50 p-4 text-xs font-medium text-blue-700 dark:bg-blue-900/10 dark:text-blue-400 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-2">
                                 <div className={`h-2 w-2 rounded-full ${gps.latitude ? 'bg-green-500' : 'bg-amber-500 animate-pulse'}`} />
-                                GPS: {gps.latitude ? `${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)}` : 'Obteniendo ubicación...'}
+                                GPS: {gps.latitude ? `${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)}` : 'Obteniendo ubicacion...'}
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />

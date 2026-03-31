@@ -3,7 +3,7 @@ import { getOdooClient, OdooError } from '@/lib/odoo-client';
 import { logger } from '@/lib/logger';
 
 /**
- * API Route: Diagnóstico de Campos GPS
+ * API Route: Diagnostico de Campos GPS
  * 
  * Verifica si los campos GPS personalizados existen en Odoo
  * y si tienen datos guardados.
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   try {
     const odoo = getOdooClient();
     
-    logger.info('Iniciando diagnóstico de campos GPS');
+    logger.info('Iniciando diagnostico de campos GPS');
     
     const diagnosticResult: any = {
       success: true,
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 
       diagnosticResult.testResults.sampleRecords = recentRecords.length;
       
-      // Los campos existen si llegamos aquí sin error
+      // Los campos existen si llegamos aqui sin error
       diagnosticResult.testResults.fieldsExist = true;
       
       if (recentRecords.length > 0) {
@@ -113,10 +113,10 @@ export async function GET(req: NextRequest) {
         
         diagnosticResult.testResults.fieldsExist = false;
         diagnosticResult.testResults.errors.push(
-          'Los campos GPS NO EXISTEN en Odoo. Debes crearlos siguiendo la guía en ODOO_CAMPOS_GPS.md'
+          'Los campos GPS NO EXISTEN en Odoo. Debes crearlos siguiendo la guia en ODOO_CAMPOS_GPS.md'
         );
         
-        // Identificar campos específicos que faltan
+        // Identificar campos especificos que faltan
         const missingFields: string[] = [];
         [...GPS_FIELDS.checkin, ...GPS_FIELDS.checkout].forEach(field => {
           if (errorMessage.includes(field)) {
@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
 
       if (modelFields.length === 0) {
         diagnosticResult.testResults.errors.push(
-          'Los campos GPS no están registrados en ir.model.fields. Debes crearlos en Odoo.'
+          'Los campos GPS no estan registrados en ir.model.fields. Debes crearlos en Odoo.'
         );
       } else if (modelFields.length < 6) {
         const foundFields = modelFields.map((f: any) => f.name);
@@ -190,25 +190,25 @@ export async function GET(req: NextRequest) {
       
       if (hasAnyRecords) {
         diagnosticResult.status = 'warning';
-        diagnosticResult.message = '⚠️ Los campos GPS existen pero no tienen datos. La app no está enviando coordenadas o hay un problema de permisos.';
+        diagnosticResult.message = '⚠️ Los campos GPS existen pero no tienen datos. La app no esta enviando coordenadas o hay un problema de permisos.';
       } else {
         diagnosticResult.status = 'info';
-        diagnosticResult.message = '📋 Los campos GPS están configurados correctamente. Haz un check-in de prueba para verificar que las coordenadas se guarden.';
+        diagnosticResult.message = '📋 Los campos GPS estan configurados correctamente. Haz un check-in de prueba para verificar que las coordenadas se guarden.';
       }
     } else {
       diagnosticResult.status = 'error';
-      diagnosticResult.message = '❌ Los campos GPS NO EXISTEN en Odoo. Debes crearlos siguiendo la guía.';
+      diagnosticResult.message = '❌ Los campos GPS NO EXISTEN en Odoo. Debes crearlos siguiendo la guia.';
     }
 
     return NextResponse.json(diagnosticResult);
 
   } catch (error) {
-    logger.error('Error en diagnóstico GPS', error as Error);
+    logger.error('Error en diagnostico GPS', error as Error);
     
     return NextResponse.json(
       {
         success: false,
-        error: 'Error al ejecutar diagnóstico',
+        error: 'Error al ejecutar diagnostico',
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
@@ -222,20 +222,20 @@ function generateRecommendations(diagnostic: any): string[] {
 
   if (!diagnostic.testResults.fieldsExist) {
     recommendations.push(
-      '1. CREAR CAMPOS GPS: Los campos no existen. Sigue la guía en ODOO_CAMPOS_GPS.md'
+      '1. CREAR CAMPOS GPS: Los campos no existen. Sigue la guia en ODOO_CAMPOS_GPS.md'
     );
     recommendations.push(
-      '2. MÉTODO RÁPIDO: Ejecuta el script SQL proporcionado en la documentación'
+      '2. METODO RAPIDO: Ejecuta el script SQL proporcionado en la documentacion'
     );
     recommendations.push(
-      '3. REINICIAR ODOO: Después de crear los campos, reinicia el servicio de Odoo'
+      '3. REINICIAR ODOO: Despues de crear los campos, reinicia el servicio de Odoo'
     );
     recommendations.push(
-      '4. VERIFICAR: Vuelve a ejecutar este diagnóstico para confirmar'
+      '4. VERIFICAR: Vuelve a ejecutar este diagnostico para confirmar'
     );
   } else if (diagnostic.testResults.fieldsExist && !diagnostic.testResults.hasData && hasAnyRecords) {
     recommendations.push(
-      '1. VERIFICAR GPS EN LA APP: Asegúrate de que la app tiene permiso para acceder a la ubicación'
+      '1. VERIFICAR GPS EN LA APP: Asegurate de que la app tiene permiso para acceder a la ubicacion'
     );
     recommendations.push(
       '2. REVISAR LOGS: Revisa los logs del servidor para ver si hay errores al guardar GPS'
@@ -248,27 +248,27 @@ function generateRecommendations(diagnostic: any): string[] {
     );
   } else if (diagnostic.testResults.fieldsExist && !hasAnyRecords) {
     recommendations.push(
-      '✅ Los campos GPS están configurados correctamente en Odoo'
+      '✅ Los campos GPS estan configurados correctamente en Odoo'
     );
     recommendations.push(
-      '📍 SIGUIENTE PASO: Haz un check-in desde la app (asegúrate de permitir acceso a ubicación)'
+      '📍 SIGUIENTE PASO: Haz un check-in desde la app (asegurate de permitir acceso a ubicacion)'
     );
     recommendations.push(
-      '🔍 Después del check-in, vuelve a ejecutar este diagnóstico para verificar que las coordenadas se guardaron'
+      '🔍 Despues del check-in, vuelve a ejecutar este diagnostico para verificar que las coordenadas se guardaron'
     );
   } else if (diagnostic.metadata && diagnostic.metadata.fieldsInModel < 6) {
     recommendations.push(
       `FALTAN ${6 - diagnostic.metadata.fieldsInModel} CAMPOS: ${diagnostic.fields.missing || 'Desconocidos'}`
     );
     recommendations.push(
-      'Crea los campos faltantes siguiendo la guía en ODOO_CAMPOS_GPS.md'
+      'Crea los campos faltantes siguiendo la guia en ODOO_CAMPOS_GPS.md'
     );
   } else {
     recommendations.push(
-      '✅ Todo está configurado correctamente'
+      '✅ Todo esta configurado correctamente'
     );
     recommendations.push(
-      '📍 Los campos GPS existen y están recibiendo datos'
+      '📍 Los campos GPS existen y estan recibiendo datos'
     );
   }
 

@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 
 const loginSchema = z.object({
-  email: z.string().email("Correo electrónico inválido"),
-  password: z.string().min(8, "El DNI/Contraseña debe tener al menos 8 caracteres"),
+  email: z.string().email("Correo electronico invalido"),
+  password: z.string().min(8, "El DNI/Contrasena debe tener al menos 8 caracteres"),
 });
 
 function LoginContent() {
@@ -72,7 +72,7 @@ function LoginContent() {
       
       router.push("/");
     } catch (e) {
-      setErrors({ password: 'Error de red. Inténtalo de nuevo.' });
+      setErrors({ password: 'Error de red. Intentalo de nuevo.' });
       setLoading(false);
     }
   };
@@ -86,7 +86,7 @@ function LoginContent() {
               Bienvenido
             </h1>
             <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              Inicia sesión en QR Generator Studio
+              Inicia sesion en QR Generator Studio
             </p>
           </div>
 
@@ -95,7 +95,7 @@ function LoginContent() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Correo Electrónico
+                Correo Electronico
               </label>
               <input
                 type="email"
@@ -110,7 +110,7 @@ function LoginContent() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Contraseña
+                Contrasena
               </label>
               <input
                 type="password"
@@ -128,14 +128,14 @@ function LoginContent() {
               className="flex h-12 w-full items-center justify-center rounded-xl bg-black text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
               disabled={loading}
             >
-              {loading ? "Cargando..." : "Iniciar Sesión"}
+              {loading ? "Cargando..." : "Iniciar Sesion"}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-zinc-500">
-            ¿No tienes una cuenta?{" "}
+            No tienes una cuenta?{" "}
             <Link href="/register" className="font-semibold text-black hover:underline dark:text-white">
-              Regístrate aquí
+              Registrate aqui
             </Link>
           </p>
         </div>

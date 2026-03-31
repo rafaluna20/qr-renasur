@@ -1,14 +1,14 @@
 /**
  * Utilidades de Fecha y Hora
  * 
- * Funciones helper para trabajar con fechas en la aplicación.
+ * Funciones helper para trabajar con fechas en la aplicacion.
  * Compatible con formato de Odoo y formatos de display.
  */
 
 import { DATE_FORMATS, TIME_INTERVALS } from './constants';
 
 /**
- * Formatear número con ceros a la izquierda
+ * Formatear numero con ceros a la izquierda
  */
 function pad(num: number, size: number = 2): string {
   return String(num).padStart(size, '0');
@@ -90,11 +90,11 @@ export function parseTime(timeString: string): Date {
 }
 
 // ============================================
-// CÁLCULOS DE TIEMPO
+// CALCULOS DE TIEMPO
 // ============================================
 
 /**
- * Calcular duración entre dos horas (HH:mm)
+ * Calcular duracion entre dos horas (HH:mm)
  */
 export function calculateDuration(
   startTime: string,
@@ -152,7 +152,7 @@ export function formatHoursMinutes(decimalHours: number): string {
 // ============================================
 
 /**
- * Obtener inicio del día (00:00:00)
+ * Obtener inicio del dia (00:00:00)
  */
 export function getStartOfDay(date: Date = new Date()): Date {
   const d = new Date(date);
@@ -161,7 +161,7 @@ export function getStartOfDay(date: Date = new Date()): Date {
 }
 
 /**
- * Obtener fin del día (23:59:59)
+ * Obtener fin del dia (23:59:59)
  */
 export function getEndOfDay(date: Date = new Date()): Date {
   const d = new Date(date);
@@ -182,7 +182,7 @@ export function getStartOfWeek(date: Date = new Date()): Date {
 }
 
 /**
- * Obtener fin de la semana (Sábado 23:59:59)
+ * Obtener fin de la semana (Sabado 23:59:59)
  */
 export function getEndOfWeek(date: Date = new Date()): Date {
   const d = new Date(date);
@@ -212,7 +212,7 @@ export function getEndOfMonth(date: Date = new Date()): Date {
 // ============================================
 
 /**
- * Verificar si dos fechas son el mismo día
+ * Verificar si dos fechas son el mismo dia
  */
 export function isSameDay(date1: Date, date2: Date): boolean {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -250,7 +250,7 @@ export function isThisWeek(date: Date): boolean {
 // ============================================
 
 /**
- * Obtener descripción relativa de fecha
+ * Obtener descripcion relativa de fecha
  */
 export function getRelativeDateDescription(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -260,10 +260,10 @@ export function getRelativeDateDescription(date: Date | string): string {
   
   if (isToday(d)) return 'Hoy';
   if (isYesterday(d)) return 'Ayer';
-  if (diffDays < 7) return `Hace ${diffDays} días`;
+  if (diffDays < 7) return `Hace ${diffDays} dias`;
   if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`;
   if (diffDays < 365) return `Hace ${Math.floor(diffDays / 30)} meses`;
-  return `Hace ${Math.floor(diffDays / 365)} años`;
+  return `Hace ${Math.floor(diffDays / 365)} anos`;
 }
 
 // ============================================
@@ -271,12 +271,12 @@ export function getRelativeDateDescription(date: Date | string): string {
 // ============================================
 
 /**
- * Obtener nombre del día de la semana
+ * Obtener nombre del dia de la semana
  */
 export function getDayName(date: Date, short: boolean = false): string {
   const days = short 
-    ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-    : ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    ? ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab']
+    : ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
   return days[date.getDay()];
 }
 
@@ -291,7 +291,7 @@ export function getMonthName(date: Date, short: boolean = false): string {
 }
 
 /**
- * Agregar días a una fecha
+ * Agregar dias a una fecha
  */
 export function addDays(date: Date, days: number): Date {
   const result = new Date(date);
@@ -317,7 +317,7 @@ export function isWorkingHours(date: Date = new Date()): boolean {
 }
 
 /**
- * Verificar si es día laboral (Lunes - Viernes)
+ * Verificar si es dia laboral (Lunes - Viernes)
  */
 export function isWorkingDay(date: Date = new Date()): boolean {
   const day = date.getDay();

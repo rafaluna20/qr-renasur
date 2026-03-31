@@ -2,11 +2,11 @@
  * Cliente centralizado para Odoo JSON-RPC
  * 
  * Beneficios:
- * - Elimina código duplicado
+ * - Elimina codigo duplicado
  * - Centraliza credenciales
  * - Manejo de errores consistente
  * - Type-safe con TypeScript
- * - Fácil de testear
+ * - Facil de testear
  */
 
 interface OdooConfig {
@@ -65,7 +65,7 @@ export class OdooClient {
   }
 
   /**
-   * Método genérico para llamar a Odoo
+   * Metodo generico para llamar a Odoo
    */
   private async call<T = any>(
     model: string,
@@ -220,7 +220,7 @@ export class OdooClient {
   }
 
   /**
-   * Ejecutar métodos arbitrarios del modelo
+   * Ejecutar metodos arbitrarios del modelo
    */
   async execute_kw<T = any>(
     model: string,

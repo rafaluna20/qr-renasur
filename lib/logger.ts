@@ -1,8 +1,8 @@
 /**
  * Logger Estructurado
  * 
- * Proporciona logging consistente en toda la aplicación.
- * En producción, estos logs pueden integrarse con servicios
+ * Proporciona logging consistente en toda la aplicacion.
+ * En produccion, estos logs pueden integrarse con servicios
  * como Winston, Pino, o enviarse a ELK Stack.
  */
 
@@ -87,7 +87,7 @@ class Logger {
       return output;
     }
 
-    // En producción: formato JSON para parseo
+    // En produccion: formato JSON para parseo
     return JSON.stringify({
       service: this.serviceName,
       ...entry,
@@ -165,7 +165,7 @@ class Logger {
   }
 
   /**
-   * Crear logger específico para un módulo
+   * Crear logger especifico para un modulo
    */
   child(moduleName: string): Logger {
     const childLogger = new Logger(`${this.serviceName}:${moduleName}`);
@@ -177,7 +177,7 @@ class Logger {
 // Exportar instancia singleton
 export const logger = new Logger();
 
-// Exportar class para crear loggers específicos
+// Exportar class para crear loggers especificos
 export { Logger };
 
 // Helpers para logging de API requests

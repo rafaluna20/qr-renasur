@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
         const { asiento_id, file_name, file_base64, mimetype } = body;
 
         if (!asiento_id || !file_base64) {
-            return handleAPIError(new Error('Faltan parámetros: asiento_id y file_base64 son requeridos'));
+            return handleAPIError(new Error('Faltan parametros: asiento_id y file_base64 son requeridos'));
         }
 
         const odoo = getOdooClient();

@@ -1,7 +1,7 @@
 /**
  * Tipos TypeScript Centralizados
  * 
- * Exporta todos los tipos de la aplicación.
+ * Exporta todos los tipos de la aplicacion.
  */
 
 // Re-export de tipos de API
@@ -36,7 +36,7 @@ export type {
   PaginatedResponse,
 } from './api';
 
-// Tipos adicionales de la aplicación
+// Tipos adicionales de la aplicacion
 export type UserRole = 'admin' | 'user';
 
 export type Theme = 'light' | 'dark' | 'auto';

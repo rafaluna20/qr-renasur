@@ -29,11 +29,11 @@ export function useLocalStorage<T>(
     }
   });
 
-  // Función para actualizar el valor
+  // Funcion para actualizar el valor
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {
       try {
-        // Permitir función como en useState
+        // Permitir funcion como en useState
         const valueToStore = value instanceof Function ? value(storedValue) : value;
         
         setStoredValue(valueToStore);
@@ -48,7 +48,7 @@ export function useLocalStorage<T>(
     [key, storedValue]
   );
 
-  // Función para eliminar el valor
+  // Funcion para eliminar el valor
   const removeValue = useCallback(() => {
     try {
       setStoredValue(initialValue);
