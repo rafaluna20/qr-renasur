@@ -336,11 +336,11 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
         setShowQRScanner(false);
         executeAssistance();
       } else {
-        toast.error("El cÃ³digo QR no es valido para asistencia.");
+        toast.error("El codigo QR no es valido para asistencia.");
         setShowQRScanner(false);
       }
     } catch (e) {
-      toast.error("El cÃ³digo QR escaneado no es valido.");
+      toast.error("El codigo QR escaneado no es valido.");
       setShowQRScanner(false);
     }
   };
