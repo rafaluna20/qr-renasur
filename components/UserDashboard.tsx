@@ -67,12 +67,22 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const limaDate = odooToLimaDate(record.check_in);
       if (isNaN(limaDate.getTime())) return;
 
+      let exactHours = Number(record.worked_hours) || 0;
+      if (record.check_in && record.check_out && typeof record.check_out === 'string') {
+        const inTime = new Date(record.check_in.replace(' ', 'T') + 'Z').getTime();
+        const outTime = new Date(record.check_out.replace(' ', 'T') + 'Z').getTime();
+        if (!isNaN(inTime) && !isNaN(outTime)) {
+          exactHours = Math.max(0, (outTime - inTime) / 3600000);
+        }
+      }
+      record._exactHours = exactHours;
+
       // Group by Day
       const dayKey = limaDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
 
       if (!byDay[dayKey]) byDay[dayKey] = { totalHours: 0, records: [] };
       byDay[dayKey].records.push(record);
-      byDay[dayKey].totalHours += (Number(record.worked_hours) || 0);
+      byDay[dayKey].totalHours += exactHours;
 
       // Group by Week (Sunday start)
       const dayOfWeek = limaDate.getDay();
@@ -84,7 +94,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
 
       if (!byWeek[weekKey]) byWeek[weekKey] = { totalHours: 0, records: [] };
       byWeek[weekKey].records.push(record);
-      byWeek[weekKey].totalHours += (Number(record.worked_hours) || 0);
+      byWeek[weekKey].totalHours += exactHours;
     });
 
     return { groupedByDay: byDay, groupedByWeek: byWeek };
@@ -533,7 +543,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                               </span>
                             </div>
                             <span className="text-[11px] font-bold text-zinc-500">
-                              {record.worked_hours ? `${Number(record.worked_hours).toFixed(1)}h` : '--'}
+                              {record.check_out && typeof record.check_out === 'string' ? `${record._exactHours.toFixed(1)}h` : '--'}
                             </span>
                           </div>
                         ))}
@@ -571,7 +581,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                               </span>
                             </div>
                             <span className="text-[11px] font-bold text-zinc-500">
-                              {record.worked_hours ? `${Number(record.worked_hours).toFixed(1)}h` : '--'}
+                              {record.check_out && typeof record.check_out === 'string' ? `${record._exactHours.toFixed(1)}h` : '--'}
                             </span>
                           </div>
                         );
