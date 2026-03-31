@@ -433,7 +433,7 @@ function HomeContent() {
                       {userRole === "admin" ? "Panel de Administrador" : "TerraField App"}
                     </h1>
                     <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                      Inicia sesiÃ³n en TerraField App
+                      Inicia sesion en TerraField App
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -673,7 +673,7 @@ function HomeContent() {
                     {missingIds && (
                       <div className="rounded-xl bg-amber-50 p-4 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
                         <p className="text-sm text-amber-800 dark:text-amber-400 font-medium">
-                          âš ï¸ Se requiere proyectoID y tareaID para enviar reportes. Por favor, acceda mediante un cÃ³digo QR vÃ¡lido.
+                          Se requiere proyectoID y tareaID para enviar reportes. Por favor, acceda mediante un codigo QR valido.
                         </p>
                       </div>
                     )}
@@ -701,7 +701,7 @@ function HomeContent() {
                 )}
               </div>
               <div className="bg-zinc-50 px-8 py-4 dark:bg-zinc-800/50">
-                <p className="text-center text-xs text-zinc-400">TerraField App â€¢ {userRole === "admin" ? "Admin" : "User"}</p>
+                <p className="text-center text-xs text-zinc-400">TerraField App {userRole === "admin" ? "Admin" : "User"}</p>
               </div>
             </div>
           )}

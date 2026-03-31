@@ -23,7 +23,7 @@ export default function AdminPanel({
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${adminMode === "proyecto" ? "bg-white text-black shadow-sm dark:bg-zinc-700 dark:text-white" : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
             }`}
         >
-          ðŸ“‹ Proyecto / Tarea
+          Proyecto / Tarea
         </button>
         <button
           type="button"
@@ -31,7 +31,7 @@ export default function AdminPanel({
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${adminMode === "asistencia" ? "bg-white text-black shadow-sm dark:bg-zinc-700 dark:text-white" : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
             }`}
         >
-          ðŸ•  Asistencia
+          Asistencia
         </button>
       </div>
 
@@ -46,13 +46,13 @@ export default function AdminPanel({
               "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
               } disabled:opacity-50`}
           >
-            {isSubmitted ? "Â¡CÃ³digo Generado!" : "Generar QR de Proyecto"}
+            {isSubmitted ? "    ¡Código Generado!" : "Generar QR de Proyecto"}
           </button>
         </form>
       ) : (
         <div className="grid gap-4">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">ðŸ•  QR de Asistencia</p>
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">QR de Asistencia</p>
             <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
               Este QR lleva a los empleados al login del app para registrar su entrada o salida.
             </p>
@@ -63,7 +63,7 @@ export default function AdminPanel({
             onClick={handleDownload}
             className="h-12 w-full rounded-xl bg-black font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
-            â¬‡ï¸  Descargar QR de Asistencia
+            Descargar QR de Asistencia
           </button>
         </div>
       )}

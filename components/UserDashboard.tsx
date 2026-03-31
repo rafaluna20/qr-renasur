@@ -189,15 +189,15 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
 
   const executeAssistance = async () => {
     try {
-      setStatus({ type: 'loading', message: 'Obteniendo ubicación...' });
+      setStatus({ type: 'loading', message: 'Obteniendo ubicacion...' });
 
-      // Obtener ubicación GPS
+      // Obtener ubicacion GPS
       const coords = await getLocation();
 
       if (!coords) {
-        // Si hay error de geolocalización, mostrar advertencia pero continuar
-        console.warn('No se pudo obtener ubicación:', geoError);
-        setStatus({ type: 'loading', message: 'Procesando sin ubicación...' });
+        // Sin GPS, continuar sin ubicacion
+        console.warn('No se pudo obtener ubicacion:', geoError);
+        setStatus({ type: 'loading', message: 'Procesando sin ubicacion...' });
       } else {
         setStatus({ type: 'loading', message: 'Procesando...' });
       }
@@ -229,7 +229,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       const now = new Date();
       const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-      // Preparar datos de ubicación si estÃ¡n disponibles
+      // Preparar datos de ubicación si están disponibles
       const locationData = coords ? {
         latitude: coords.latitude,
         longitude: coords.longitude,
@@ -252,8 +252,8 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             throw new Error(dataIn?.error || `Error del servidor (${responseIn.status}): ${textIn.slice(0, 100)}`);
           }
 
-          const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
-          setStatus({ type: 'success', message: `¡Entrada registrada a las ${timeStr}!${locationMsg}` });
+          const locationMsg = coords ? ` (lat: ${coords.latitude.toFixed(4)}, lon: ${coords.longitude.toFixed(4)})` : '';
+          setStatus({ type: 'success', message: `Entrada registrada a las ${timeStr}${locationMsg}` });
         } else {
           const lastRegistry = data.data.result[0];
           if (!lastRegistry.check_out) {
@@ -271,8 +271,8 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
               throw new Error(dataOut?.error || `Error del servidor (${responseOut.status}): ${textOut.slice(0, 100)}`);
             }
             console.log("Salida registrada:", dataOut);
-            const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
-            setStatus({ type: 'success', message: `¡Salida registrada a las ${timeStr}!${locationMsg}` });
+            const locationMsg = coords ? ` (lat: ${coords.latitude.toFixed(4)}, lon: ${coords.longitude.toFixed(4)})` : '';
+            setStatus({ type: 'success', message: `Salida registrada a las ${timeStr}${locationMsg}` });
           } else {
             const responseIn = await fetch('/api/assistance/in', {
               method: 'POST',
@@ -288,8 +288,8 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
               throw new Error(dataIn?.error || `Error del servidor (${responseIn.status}): ${textIn.slice(0, 100)}`);
             }
             console.log("Nueva entrada registrada:", dataIn);
-            const locationMsg = coords ? ` (Ubicación: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)})` : ' (Sin ubicación)';
-            setStatus({ type: 'success', message: `¡Entrada registrada a las ${timeStr}!${locationMsg}` });
+            const locationMsg = coords ? ` (lat: ${coords.latitude.toFixed(4)}, lon: ${coords.longitude.toFixed(4)})` : '';
+            setStatus({ type: 'success', message: `Entrada registrada a las ${timeStr}${locationMsg}` });
           }
         }
       }
@@ -489,7 +489,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                   className={`rounded-md px-2 py-1 text-[10px] font-bold transition-all ${attendanceView === "day"
                     ? "bg-white text-black shadow-sm dark:bg-zinc-700 dark:text-white"
                     : "text-zinc-500"}`}
-                >DÃ­a</button>
+                >Día</button>
                 <button
                   onClick={() => setAttendanceView("week")}
                   className={`rounded-md px-2 py-1 text-[10px] font-bold transition-all ${attendanceView === "week"
@@ -816,7 +816,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
 
       {/* Footer */}
       <div className="pt-8 text-center">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Terra Lima â€¢ TerraField App</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Terra Lima TerraField App</p>
       </div>
 
       <button
