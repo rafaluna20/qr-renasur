@@ -19,15 +19,21 @@ export async function POST() {
     const employees = await odoo.searchRead<OdooEmployee>(
       'hr.employee',
       [['active', '=', true]],
-      ['id', 'name', 'work_email', 'identification_id', 'work_phone', 'image_128'],
+      ['id', 'name', 'work_email', 'identification_id', 'work_phone', 'image_128', 'x_obra_role'],
       { limit: 100 }
     );
+
+    // Transformar los empleados para incluir 'obra_role'
+    const transformedEmployees = employees.map(employee => ({
+      ...employee,
+      obra_role: employee.x_obra_role || 'employee' // Guardamos en memoria como obra_role internamente
+    }));
 
     return NextResponse.json({
       success: true,
       data: {
-        result: employees,
-        count: employees.length,
+        result: transformedEmployees,
+        count: transformedEmployees.length,
       }
     });
 

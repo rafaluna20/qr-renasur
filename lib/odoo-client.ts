@@ -218,6 +218,18 @@ export class OdooClient {
   async searchCount(model: string, domain: any[] = []): Promise<number> {
     return this.call<number>(model, 'search_count', [domain]);
   }
+
+  /**
+   * Ejecutar métodos arbitrarios del modelo
+   */
+  async execute_kw<T = any>(
+    model: string,
+    method: string,
+    args: any[] = [],
+    kwargs: Record<string, any> = {}
+  ): Promise<T> {
+    return this.call<T>(model, method, args, kwargs);
+  }
 }
 
 // Singleton instance
@@ -239,6 +251,7 @@ export interface OdooEmployee {
   identification_id: string;
   image_128: string;
   active: boolean;
+  x_obra_role?: 'employee' | 'resident' | 'supervisor' | 'admin';
 }
 
 export interface OdooAttendance {

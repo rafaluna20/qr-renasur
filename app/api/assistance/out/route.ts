@@ -39,11 +39,12 @@ export async function POST(req: NextRequest) {
     const odoo = getOdooClient();
     const now = new Date();
 
-    // Formatear fecha para Odoo: YYYY-MM-DD HH:MM:SS
+    // CRITICAL: Send UTC to Odoo — Odoo stores all datetimes in UTC.
+    // Using local time would cause a -5 hour drift when Odoo converts to Lima timezone.
     const pad = (n: number) => String(n).padStart(2, '0');
     const checkOut =
-      `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
-      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())} ` +
+      `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`;
 
     // Actualizar el registro de asistencia con check_out y coordenadas
     const updateData: Record<string, any> = {

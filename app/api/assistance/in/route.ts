@@ -55,15 +55,22 @@ export async function POST(req: NextRequest) {
 
     const { userId, latitude, longitude, accuracy } = validationResult.data;
     
-    // Usar zona horaria de Perú (America/Lima, UTC-5)
+    /**
+     * CRITICAL: Odoo stores ALL datetime fields in UTC internally.
+     * We must send the current time as UTC so Odoo interprets and
+     * stores it correctly, then displays it in the configured timezone
+     * (America/Lima = UTC-5) on the backend.
+     *
+     * DO NOT convert to local time before sending — that causes a 
+     * double-offset bug (e.g., 8am Lima appears as 3am in Odoo).
+     */
     const now = new Date();
-    const peruTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
     const pad = (n: number) => String(n).padStart(2, '0');
 
-    // Formatear fecha para Odoo: YYYY-MM-DD HH:MM:SS (zona horaria Perú)
+    // Send as UTC to Odoo — Odoo will handle timezone display
     const checkIn =
-      `${peruTime.getFullYear()}-${pad(peruTime.getMonth() + 1)}-${pad(peruTime.getDate())} ` +
-      `${pad(peruTime.getHours())}:${pad(peruTime.getMinutes())}:${pad(peruTime.getSeconds())}`;
+      `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())} ` +
+      `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`;
 
     logger.info('Procesando check-in', {
       userId,
