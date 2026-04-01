@@ -22,6 +22,7 @@ const checkInSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   accuracy: z.number().optional(),
+  observation: z.string().optional(),
 });
 
 // Constantes
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId, latitude, longitude, accuracy } = validationResult.data;
+    const { userId, latitude, longitude, accuracy, observation } = validationResult.data;
     
     /**
      * CRITICAL: Odoo stores ALL datetime fields in UTC internally.
@@ -173,6 +174,10 @@ export async function POST(req: NextRequest) {
       employee_id: userId,
       check_in: checkIn,
     };
+
+    if (observation) {
+      attendanceData.x_observacion = observation;
+    }
 
     // Agregar coordenadas si estan disponibles
     if (latitude !== undefined && longitude !== undefined) {

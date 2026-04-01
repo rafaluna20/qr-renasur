@@ -1,72 +1,11 @@
 [
   {
-    "id": 128,
-    "message_is_follower": true,
-    "message_follower_ids": [
-      462
-    ],
-    "message_partner_ids": [
-      3
-    ],
-    "message_ids": [
-      922,
-      914,
-      913
-    ],
-    "has_message": true,
-    "message_needaction": false,
-    "message_needaction_counter": 0,
-    "message_has_error": false,
-    "message_has_error_counter": 0,
-    "message_attachment_count": 0,
-    "rating_ids": [],
-    "website_message_ids": [],
-    "message_has_sms_error": false,
-    "employee_id": [
-      4,
-      "Rafa"
-    ],
-    "department_id": false,
-    "manager_id": false,
-    "check_in": "2026-03-31 17:16:54",
-    "check_out": "2026-03-31 23:17:18",
-    "worked_hours": 5.288333333333333,
-    "color": 0,
-    "overtime_hours": -2.711666666666667,
-    "overtime_status": "approved",
-    "validated_overtime_hours": -2.711666666666667,
-    "no_validated_overtime_hours": false,
-    "in_latitude": 0,
-    "in_longitude": 0,
-    "in_country_name": false,
-    "in_city": false,
-    "in_ip_address": false,
-    "in_browser": false,
-    "in_mode": "manual",
-    "out_latitude": 0,
-    "out_longitude": 0,
-    "out_country_name": false,
-    "out_city": false,
-    "out_ip_address": false,
-    "out_browser": false,
-    "out_mode": "manual",
-    "expected_hours": 8,
-    "display_name": "05:17 (12:16:54-18:17:18)",
-    "create_uid": [
-      2,
-      "Administrator"
-    ],
-    "create_date": "2026-03-31 17:16:55",
-    "write_uid": [
-      2,
-      "Administrator"
-    ],
-    "write_date": "2026-03-31 17:47:50",
-    "x_latitude": -12.1903568,
-    "x_longitude": -76.9744596,
-    "x_accuracy": 14.758000373840332,
-    "x_latitude_out": -12.1903253,
-    "x_longitude_out": -76.9744658,
-    "x_accuracy_out": 12.300000190734863
+    "id": 134,
+    "check_in": "2026-03-31 14:05:30",
+    "check_out": "2026-03-31 19:06:13",
+    "x_latitude": -12.1903503,
+    "x_longitude": -76.9744704,
+    "x_latitude_out": -12.1903267,
+    "x_longitude_out": -76.9744659
   }
 ]

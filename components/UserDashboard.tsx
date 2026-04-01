@@ -42,6 +42,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
   const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [attendanceView, setAttendanceView] = useState<"day" | "week">("day");
+  const [observation, setObservation] = useState('');
   const [cuadernoStats, setCuadernoStats] = useState<{ total: number; pending: number; approved: number; rejected: number; draft: number } | null>(null);
   const [cuadernoAsientos, setCuadernoAsientos] = useState<any[]>([]);
   const [cuadernoOpen, setCuadernoOpen] = useState(false);
@@ -258,7 +259,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
           const responseIn = await fetch('/api/assistance/in', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: savedEID, ...locationData }),
+            body: JSON.stringify({ userId: savedEID, observation, ...locationData }),
           });
 
           let dataIn;
@@ -277,7 +278,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             const responseOut = await fetch('/api/assistance/out', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ registryId: lastRegistry.id, ...locationData }),
+              body: JSON.stringify({ registryId: lastRegistry.id, observation, ...locationData }),
             });
 
             let dataOut;
@@ -294,7 +295,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             const responseIn = await fetch('/api/assistance/in', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: savedEID, ...locationData }),
+              body: JSON.stringify({ userId: savedEID, observation, ...locationData }),
             });
 
             let dataIn;
@@ -313,6 +314,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
 
       // Refresh summary after marking attendance
       await fetchAttendanceSummary();
+      setObservation('');
 
       // Clear success message after 5 seconds
       setTimeout(() => {
@@ -462,6 +464,17 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             </div>
           </div>
         </button>
+
+        {/* Observation Field */}
+        <div className="border-t border-zinc-100 bg-white px-6 py-4 dark:border-white/5 dark:bg-zinc-900">
+          <textarea
+            value={observation}
+            onChange={(e) => setObservation(e.target.value)}
+            placeholder="Añadir observación opcional (ej. demora por tráfico...)"
+            className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50/50 p-3 text-[13px] text-zinc-900 placeholder:text-zinc-500 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-blue-500 dark:focus:bg-zinc-900"
+            rows={2}
+          />
+        </div>
 
         {/* Summary strip - Entrada / Salida + historial toggle */}
         <div className={`flex items-center border-t px-6 py-3 ${status.type === 'error' ? 'border-red-100 bg-red-50/50 dark:border-red-900/30 dark:bg-red-900/5'

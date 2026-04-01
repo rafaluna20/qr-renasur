@@ -15,6 +15,7 @@ const checkOutSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   accuracy: z.number().optional(),
+  observation: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { registryId, latitude, longitude, accuracy } = validationResult.data;
+    const { registryId, latitude, longitude, accuracy, observation } = validationResult.data;
 
     const odoo = getOdooClient();
     const now = new Date();
@@ -50,6 +51,10 @@ export async function POST(req: NextRequest) {
     const updateData: Record<string, any> = {
       check_out: checkOut,
     };
+
+    if (observation) {
+      updateData.x_observacion = observation;
+    }
 
     // Agregar coordenadas de salida si estan disponibles
     if (latitude !== undefined && longitude !== undefined) {

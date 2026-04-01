@@ -28,7 +28,8 @@ async function test() {
       'search_read',
       [[['employee_id', '=', 4]]],
       { 
-        limit: 1,
+        fields: ['id', 'check_in', 'check_out', 'x_latitude', 'x_longitude', 'x_latitude_out', 'x_longitude_out'],
+        limit: 3,
         order: 'id desc'
       }
     ]
