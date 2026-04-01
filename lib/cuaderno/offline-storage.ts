@@ -8,14 +8,19 @@ export interface AsientoOffline {
     cuaderno_id: string;
     date: string;
     clima: string;
+    personal: string;
+    equipos: string;
     ocurrencias: string;
     latitude: number;
     longitude: number;
     gps_accuracy: number;
     state: string;
+    residente_id?: string;
+    supervisor_id?: string;
     created_at: number;
     synced: boolean;
-    photos: { name: string; base64: string; mimetype: string }[];
+    security_hash: string;
+    photos?: { name: string; base64: string; mimetype: string }[];
 }
 
 export async function saveAsientoOffline(asiento: Omit<AsientoOffline, 'synced'>): Promise<void> {

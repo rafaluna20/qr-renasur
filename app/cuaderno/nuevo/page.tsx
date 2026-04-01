@@ -9,8 +9,9 @@ function NuevoAsientoContent() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [clima, setClima] = useState('soleado');
+    const [personal, setPersonal] = useState('');
+    const [equipos, setEquipos] = useState('');
     const [ocurrencias, setOcurrencias] = useState('');
-    const [photos, setPhotos] = useState<{ name: string, base64: string, mimetype: string }[]>([]);
     const [gps, setGps] = useState({ latitude: 0, longitude: 0, accuracy: 0 });
     const [unsyncedCount, setUnsyncedCount] = useState(0);
     const [cuadernosList, setCuadernosList] = useState<{ id: number, name?: string, display_name?: string }[]>([]);
@@ -64,23 +65,11 @@ function NuevoAsientoContent() {
         };
     }, []);
 
-    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
-
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (event.target?.result) {
-                    setPhotos(prev => [...prev, {
-                        name: file.name,
-                        base64: event.target!.result as string,
-                        mimetype: file.type
-                    }]);
-                }
-            };
-            reader.readAsDataURL(file);
-        });
+    const generateHash = async (text: string) => {
+        const msgUint8 = new TextEncoder().encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -88,32 +77,38 @@ function NuevoAsientoContent() {
         setLoading(true);
 
         const residenceId = localStorage.getItem('userID');
+        const dateStr = new Date().toISOString().split('T')[0];
+        
+        const hashInput = `${dateStr}|${gps.latitude},${gps.longitude}|${ocurrencias}`;
+        const securityHash = await generateHash(hashInput);
 
         const newAsiento = {
             offline_uuid: crypto.randomUUID(),
             cuaderno_id: cuadernoId,
-            date: new Date().toISOString().split('T')[0],
+            date: dateStr,
             clima,
+            personal,
+            equipos,
             ocurrencias,
             latitude: gps.latitude,
             longitude: gps.longitude,
             gps_accuracy: gps.accuracy,
-            state: 'signed_residente',  // El acto de "Registrar y Firmar" ES la firma del residente
+            state: 'signed_residente',
             residente_id: residenceId || undefined,
             created_at: Date.now(),
-            photos
+            security_hash: securityHash
         };
 
         // Guardar local (Offline First)
         saveAsientoOffline(newAsiento);
 
-        // Intentar Sync Inmediato si hay red
+        // Intentar Sync Inmediato de forma asincrona sin bloquear el UI (Fire and Forget)
         if (isOnline) {
-            await syncPendingAsientos();
+            syncPendingAsientos().catch(console.error);
         }
 
         setLoading(false);
-        alert('Asiento guardado correctamente');
+        alert('Guardado correctamente de forma local (se sincronizara en segundo plano).');
         router.push('/');
     };
 
@@ -198,6 +193,18 @@ function NuevoAsientoContent() {
                             </div>
                         </div>
 
+                        {/* Resumen Personal y Equipos */}
+                        <div className="grid gap-6 rounded-[30px] border border-zinc-100 bg-zinc-50/50 p-6 dark:border-white/5 dark:bg-white/5">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Resumen de Personal</label>
+                                <input type="text" value={personal} onChange={(e) => setPersonal(e.target.value)} className="flex h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm transition-all focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-white dark:focus:ring-white" placeholder="Ej. 1 Ing, 5 Peones..." required />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Resumen de Equipos/Maquinaria</label>
+                                <input type="text" value={equipos} onChange={(e) => setEquipos(e.target.value)} className="flex h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm transition-all focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-white dark:focus:ring-white" placeholder="Ej. 1 Excavadora operativa..." required />
+                            </div>
+                        </div>
+
                         {/* Ocurrencias */}
                         <div className="space-y-2 pt-2">
                             <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -212,45 +219,7 @@ function NuevoAsientoContent() {
                             />
                         </div>
 
-                        {/* Fotografias */}
-                        <div className="space-y-4 pt-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                                    Archivos Adjuntos
-                                </label>
-                                <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                                    {photos.length} FOTOS
-                                </span>
-                            </div>
 
-                            <label className="group flex cursor-pointer flex-col items-center justify-center rounded-[30px] border-2 border-dashed border-zinc-200 bg-zinc-50 py-10 transition-all hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/80">
-                                <div className="rounded-2xl bg-white p-4 text-blue-500 shadow-sm transition-transform group-hover:scale-110 dark:bg-zinc-800 dark:text-blue-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></svg>
-                                </div>
-                                <p className="mt-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                                    Toca para tomar foto
-                                </p>
-                                <p className="mt-1 text-xs text-zinc-500">Puedes subir multiples imagenes</p>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    capture="environment"
-                                    onChange={handlePhotoUpload}
-                                    className="hidden"
-                                />
-                            </label>
-
-                            {photos.length > 0 && (
-                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                    {photos.map((p, i) => (
-                                        <div key={i} className="relative aspect-square overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-                                            <img src={p.base64} alt={`foto-${i}`} className="h-full w-full object-cover" />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
 
                         {/* Status Footer */}
                         <div className="flex flex-col gap-2 rounded-2xl bg-blue-50/50 p-4 text-xs font-medium text-blue-700 dark:bg-blue-900/10 dark:text-blue-400 sm:flex-row sm:items-center sm:justify-between">

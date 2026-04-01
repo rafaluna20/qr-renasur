@@ -31,6 +31,9 @@ export async function POST(req: NextRequest) {
                     longitude: asiento.longitude || 0.0,
                     gps_accuracy: asiento.gps_accuracy || 0.0,
                     state: asiento.state || 'draft',
+                    x_personal: asiento.personal || '',
+                    x_equipos: asiento.equipos || '',
+                    x_hash_seguridad: asiento.security_hash || '',
                     residente_id: asiento.residente_id ? parseInt(asiento.residente_id) : undefined,
                     supervisor_id: asiento.supervisor_id ? parseInt(asiento.supervisor_id) : undefined
                 };
