@@ -47,6 +47,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
   const [cuadernoAsientos, setCuadernoAsientos] = useState<any[]>([]);
   const [cuadernoOpen, setCuadernoOpen] = useState(false);
   const [cuadernoFilter, setCuadernoFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [selectedCuadernoFilter, setSelectedCuadernoFilter] = useState<string>('all');
 
   // Modal actions (Supervisor)
   const [actionModalOpen, setActionModalOpen] = useState(false);
@@ -100,6 +101,37 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
 
     return { groupedByDay: byDay, groupedByWeek: byWeek };
   }, [attendanceHistory]);
+
+  const masterCuadernos = useMemo(() => {
+    const unique = new Map<string, string>();
+    cuadernoAsientos.forEach(a => {
+      if (a.cuaderno_id) {
+        const cId = Array.isArray(a.cuaderno_id) ? String(a.cuaderno_id[0]) : String(a.cuaderno_id);
+        const cName = Array.isArray(a.cuaderno_id) ? a.cuaderno_id[1] : `Cuaderno #${cId}`;
+        unique.set(cId, cName);
+      }
+    });
+    return Array.from(unique.entries()).map(([id, name]) => ({ id, name }));
+  }, [cuadernoAsientos]);
+
+  const filteredAsientos = useMemo(() => {
+    if (selectedCuadernoFilter === 'all') return cuadernoAsientos;
+    return cuadernoAsientos.filter(a => {
+      const cId = Array.isArray(a.cuaderno_id) ? String(a.cuaderno_id[0]) : String(a.cuaderno_id);
+      return cId === selectedCuadernoFilter;
+    });
+  }, [cuadernoAsientos, selectedCuadernoFilter]);
+
+  const filteredStats = useMemo(() => {
+    if (!cuadernoStats) return null; // Wait for initial load to avoid jumping
+    return {
+      total: filteredAsientos.length,
+      pending: filteredAsientos.filter(a => a.state === 'signed_residente').length,
+      approved: filteredAsientos.filter(a => a.state === 'approved').length,
+      rejected: filteredAsientos.filter(a => a.state === 'rejected').length,
+      draft: filteredAsientos.filter(a => a.state === 'draft').length,
+    };
+  }, [filteredAsientos, cuadernoStats]);
 
   const fetchAttendanceSummary = async () => {
     try {
@@ -615,23 +647,36 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       {(userRole === 'resident' || userRole === 'supervisor') && (
         <div className="rounded-[30px] border border-blue-100 bg-white p-6 shadow-sm dark:border-blue-900/30 dark:bg-zinc-900">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /><path d="M12 8h4" /><path d="M12 12h4" /></svg>
               </div>
               <h4 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Cuaderno de Obra</h4>
             </div>
+            
+            {masterCuadernos.length > 0 && (
+              <select
+                value={selectedCuadernoFilter}
+                onChange={(e) => setSelectedCuadernoFilter(e.target.value)}
+                className="h-9 w-full sm:w-auto rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-700 outline-none transition-all focus:border-blue-500 focus:bg-white dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-blue-500"
+              >
+                <option value="all">Todas las Obras</option>
+                {masterCuadernos.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* Stat pills â€” only when data is loaded */}
-          {cuadernoStats !== null && (
+          {/* Stat pills */}
+          {filteredStats !== null && (
             <div className="grid grid-cols-4 gap-2 mb-4">
               {[
-                { label: 'Total', value: cuadernoStats.total, color: 'text-zinc-700 dark:text-zinc-200', bg: 'bg-zinc-50 dark:bg-white/5' },
-                { label: 'Pendientes', value: cuadernoStats.pending, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/10' },
-                { label: 'Aprobados', value: cuadernoStats.approved, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/10' },
-                { label: 'Observados', value: cuadernoStats.rejected, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/10' },
+                { label: 'Total', value: filteredStats.total, color: 'text-zinc-700 dark:text-zinc-200', bg: 'bg-zinc-50 dark:bg-white/5' },
+                { label: 'Pendientes', value: filteredStats.pending, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/10' },
+                { label: 'Aprobados', value: filteredStats.approved, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/10' },
+                { label: 'Observados', value: filteredStats.rejected, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/10' },
               ].map(({ label, value, color, bg }) => (
                 <div key={label} className={`flex flex-col items-center rounded-2xl ${bg} py-3`}>
                   <span className={`text-xl font-extrabold ${color}`}>{value}</span>
@@ -651,7 +696,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
           </Link>
 
           {/* Ver Historial - below CTA */}
-          {cuadernoStats !== null && (
+          {filteredStats !== null && (
             <button
               onClick={() => setCuadernoOpen(!cuadernoOpen)}
               className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 py-2.5 text-[11px] font-bold uppercase tracking-wide text-zinc-500 transition-all hover:bg-zinc-100 hover:text-zinc-700 dark:border-white/5 dark:bg-white/[0.03] dark:text-zinc-400 dark:hover:bg-white/5"
@@ -659,13 +704,13 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
               {cuadernoOpen ? (
                 <><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg> Ocultar historial</>
               ) : (
-                <><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg> Ver historial ({cuadernoStats.total})</>
+                <><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg> Ver historial ({filteredStats.total})</>
               )}
             </button>
           )}
 
           {/* Expandable asiento list */}
-          {cuadernoOpen && cuadernoStats !== null && (
+          {cuadernoOpen && filteredStats !== null && (
             <div className="mt-4 border-t border-zinc-50 pt-4 dark:border-white/5">
               <div className="flex items-center rounded-xl bg-zinc-100 p-0.5 dark:bg-white/5 mb-3">
                 {([['all', 'Todos'], ['pending', 'Pendientes'], ['approved', 'Aprobados'], ['rejected', 'Observados']] as const).map(([key, label]) => (
@@ -680,7 +725,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                 ))}
               </div>
               <div className="max-h-[280px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                {cuadernoAsientos
+                {filteredAsientos
                   .filter((a: any) => {
                     if (cuadernoFilter === 'all') return true;
                     if (cuadernoFilter === 'pending') return a.state === 'signed_residente';
