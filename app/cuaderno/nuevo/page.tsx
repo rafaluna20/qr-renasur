@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
@@ -13,7 +13,9 @@ function NuevoAsientoContent() {
     const [photos, setPhotos] = useState<{ name: string, base64: string, mimetype: string }[]>([]);
     const [gps, setGps] = useState({ latitude: 0, longitude: 0, accuracy: 0 });
     const [unsyncedCount, setUnsyncedCount] = useState(0);
-    const [cuadernoId, setCuadernoId] = useState('1');
+    const [cuadernosList, setCuadernosList] = useState<{ id: number, name?: string, display_name?: string }[]>([]);
+    const [loadingCuadernos, setLoadingCuadernos] = useState(true);
+    const [cuadernoId, setCuadernoId] = useState('');
     const [isOnline, setIsOnline] = useState(true); // Assume true initially for SSR matched tree
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,7 +33,24 @@ function NuevoAsientoContent() {
             const unsynced = await getUnsyncedAsientos();
             setUnsyncedCount(unsynced.length);
         };
+        const loadCuadernos = async () => {
+            try {
+                const res = await fetch('/api/cuaderno/list-cuadernos');
+                const data = await res.json();
+                if (data.success && data.data?.cuadernos) {
+                    setCuadernosList(data.data.cuadernos);
+                    if (data.data.cuadernos.length > 0) {
+                        setCuadernoId(String(data.data.cuadernos[0].id));
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching cuadernos", e);
+            } finally {
+                setLoadingCuadernos(false);
+            }
+        };
         loadUnsynced();
+        loadCuadernos();
 
         setIsOnline(navigator.onLine);
 
@@ -141,16 +160,24 @@ function NuevoAsientoContent() {
                         <div className="grid gap-6 rounded-[30px] border border-zinc-100 bg-zinc-50/50 p-6 dark:border-white/5 dark:bg-white/5">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                                    Cuaderno ID (Proyecto)
+                                    Cuaderno de Obra {loadingCuadernos && <span className="text-xs text-blue-500 ml-2">(Cargando de Odoo...)</span>}
                                 </label>
-                                <input
-                                    type="text"
+                                <select
                                     value={cuadernoId}
                                     onChange={(e) => setCuadernoId(e.target.value)}
-                                    className="flex h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm transition-all focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-white dark:focus:ring-white"
-                                    placeholder="Ej. 1"
+                                    disabled={loadingCuadernos || cuadernosList.length === 0}
+                                    className="flex h-12 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm transition-all focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-white dark:focus:ring-white"
                                     required
-                                />
+                                >
+                                    {cuadernosList.length === 0 && !loadingCuadernos && (
+                                        <option value="">No hay cuadernos disponibles</option>
+                                    )}
+                                    {cuadernosList.map(c => (
+                                        <option key={c.id} value={String(c.id)}>
+                                            {c.display_name || c.name || `Cuaderno #${c.id}`}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="space-y-2">
