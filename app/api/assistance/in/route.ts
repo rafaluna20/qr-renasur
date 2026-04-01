@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     if (existingOpen.length > 0) {
       const openRecord = existingOpen[0];
-      const checkInTime = new Date(openRecord.check_in);
+      const checkInTime = new Date(openRecord.check_in.replace(' ', 'T') + 'Z');
       const hoursOpen = (now.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
       
       logger.warn('Registro abierto encontrado', {
@@ -145,6 +145,7 @@ export async function POST(req: NextRequest) {
       } else {
         // Registro reciente (< 24 horas), requiere cierre manual
         const checkInFormatted = checkInTime.toLocaleString('es-ES', {
+          timeZone: 'America/Lima',
           weekday: 'short',
           year: 'numeric',
           month: 'short',

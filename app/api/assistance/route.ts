@@ -51,12 +51,8 @@ export async function POST(req: NextRequest) {
     const domain: any[] = [['employee_id', '=', userId]];
     
     if (!allHistory) {
-      domain.push(['check_in', '>=', `${today} 00:00:00`]);
-      domain.push(['check_in', '<=', `${today} 23:59:59`]);
-      
-      logger.info('Consultando asistencias del dia', {
+      logger.info('Consultando estado actual de asistencia (ultimo registro)', {
         userId,
-        fechaPeru: today,
       });
     } else {
       logger.info('Consultando historial completo de asistencias', { userId });
@@ -71,7 +67,7 @@ export async function POST(req: NextRequest) {
       ['id', 'employee_id', 'check_in', 'check_out', 'worked_hours'],
       {
         order: 'check_in desc',
-        limit: allHistory ? 50 : 1000
+        limit: allHistory ? 50 : 1
       }
     );
 
