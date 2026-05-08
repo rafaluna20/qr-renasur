@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sin Conexión - Cuaderno de Obra</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 24px;
+      padding: 48px 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: #f3f4f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+      }
+    }
+
+    .icon svg {
+      width: 60px;
+      height: 60px;
+      color: #9ca3af;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #6b7280;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      padding: 12px 20px;
+      background: #fef3c7;
+      border-radius: 12px;
+      color: #92400e;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background: #f59e0b;
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .features {
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .features h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 16px;
+    }
+
+    .feature-list {
+      list-style: none;
+      text-align: left;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .feature-list li::before {
+      content: "✓";
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      background: #10b981;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .checking .spinner {
+      display: block;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 32px 24px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      p {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+      </svg>
+    </div>
+
+    <h1>Sin Conexión a Internet</h1>
+    <p>No pudimos conectar con el servidor. Verifica tu conexión e intenta nuevamente.</p>
+
+    <div class="status">
+      <span class="status-dot"></span>
+      <span id="status-text">Verificando conexión...</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="checkConnection()">
+        <span class="btn-text">Reintentar</span>
+        <span class="spinner"></span>
+      </button>
+      <a href="/" class="btn btn-secondary">Volver al Inicio</a>
+    </div>
+
+    <div class="features">
+      <h2>Funciona Offline</h2>
+      <ul class="feature-list">
+        <li>Puedes crear asientos sin conexión y se sincronizarán automáticamente cuando recuperes internet</li>
+        <li>Todos tus datos se guardan de forma segura en tu dispositivo</li>
+        <li>Las fotos se optimizan automáticamente para ahorrar datos</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    let checking = false;
+
+    async function checkConnection() {
+      if (checking) return;
+      
+      checking = true;
+      const button = document.querySelector('.btn-primary');
+      const btnText = button.querySelector('.btn-text');
+      const statusText = document.getElementById('status-text');
+      
+      button.classList.add('checking');
+      button.disabled = true;
+      statusText.textContent = 'Verificando conexión...';
+
+      try {
+        // Intentar fetch a la raíz de la app
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('/', {
+          method: 'HEAD',
+          signal: controller.signal,
+          cache: 'no-store'
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          statusText.textContent = '¡Conexión restaurada!';
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+        } else {
+          throw new Error('Network error');
+        }
+      } catch (error) {
+        statusText.textContent = 'Sin conexión - Intenta de nuevo';
+        button.classList.remove('checking');
+        button.disabled = false;
+        checking = false;
+      }
+    }
+
+    // Auto-verificar conexión cada 30 segundos
+    setInterval(() => {
+      if (!checking && navigator.onLine) {
+        checkConnection();
+      }
+    }, 30000);
+
+    // Listener de eventos de conexión
+    window.addEventListener('online', () => {
+      document.getElementById('status-text').textContent = '¡Conexión restaurada!';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    });
+
+    window.addEventListener('offline', () => {
+      document.getElementById('status-text').textContent = 'Sin conexión';
+    });
+
+    // Verificación inicial
+    if (navigator.onLine) {
+      document.getElementById('status-text').textContent = 'Reconectando...';
+      setTimeout(checkConnection, 1000);
+    } else {
+      document.getElementById('status-text').textContent = 'Sin conexión';
+    }
+  </script>
+</body>
+</html>

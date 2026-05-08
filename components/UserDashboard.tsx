@@ -769,8 +769,19 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                             </div>
                           </div>
                         )}
+                        
+                        {/* Botón Ver Detalle - visible para todos */}
+                        <div className="px-3 pb-2">
+                          <Link
+                            href={`/cuaderno/detalle/${asiento.id}`}
+                            className="block w-full text-center rounded-lg bg-indigo-500 hover:bg-indigo-600 py-2 text-xs font-bold text-white transition-colors"
+                          >
+                            📋 Ver Detalle Completo
+                          </Link>
+                        </div>
+
                         {(userRole === 'supervisor' || userRole === 'admin') && asiento.state === 'signed_residente' && (
-                          <div className="flex gap-2 p-3 pt-0">
+                          <div className="flex gap-2 px-3 pb-3">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
