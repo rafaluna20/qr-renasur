@@ -110,16 +110,17 @@ export class OdooClient {
       const data: OdooResponse<T> = await response.json();
 
       if (data.error) {
-        // TEMPORAL: Logging detallado del error de Odoo
-        console.error('=== ODOO ERROR DETAILS ===');
-        console.error('Full error object:', JSON.stringify(data.error, null, 2));
-        console.error('Error message:', data.error.message);
-        console.error('Error code:', data.error.code);
-        console.error('Error data:', data.error.data);
-        console.error('========================');
+        // Loguear en consola del servidor para facilitar debugging
+        console.error('[OdooClient] Error JSON-RPC:', {
+          model,
+          method,
+          message: data.error.message,
+          code: data.error.code,
+          odooData: data.error.data,
+        });
 
         throw new OdooError(
-          data.error.message,
+          data.error.data?.message || data.error.message,
           data.error.code,
           data.error.data
         );
@@ -156,13 +157,22 @@ export class OdooClient {
   }
 
   /**
-   * Crear un nuevo registro
+   * Crear un nuevo registro.
+   * 
+   * Odoo JSON-RPC execute_kw espera:
+   *   args = [vals_dict]  ← primer argumento posicional = el dict de valores
+   * 
+   * Odoo 16+ acepta también una lista de dicts (multi-create) pero
+   * para compatibilidad máxima y retorno simple de ID se usa single-dict.
+   * La respuesta es siempre un número (ID del registro creado).
    */
   async create<T = any>(
     model: string,
     values: Record<string, any>
   ): Promise<number> {
-    return this.call<number>(model, 'create', [[values]]);
+    const result = await this.call<number | number[]>(model, 'create', [values], {});
+    // Odoo 16+ puede retornar [id] en lugar de id — normalizar siempre a number
+    return Array.isArray(result) ? result[0] : result;
   }
 
   /**
@@ -235,11 +245,21 @@ export class OdooClient {
 // Singleton instance
 let odooClientInstance: OdooClient | null = null;
 
+/**
+ * Retorna la instancia singleton del cliente Odoo.
+ * En desarrollo, invalida el singleton si las env vars cambiaron
+ * (útil cuando se edita .env.local sin reiniciar el servidor).
+ */
 export function getOdooClient(): OdooClient {
   if (!odooClientInstance) {
     odooClientInstance = new OdooClient();
   }
   return odooClientInstance;
+}
+
+/** Forzar la recreación del cliente (útil para tests o cambios de env) */
+export function resetOdooClient(): void {
+  odooClientInstance = null;
 }
 
 // Type definitions para modelos comunes de Odoo

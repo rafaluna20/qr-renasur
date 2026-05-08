@@ -23,14 +23,26 @@ export interface AsientoOffline {
     photos?: { name: string; base64: string; mimetype: string }[];
 }
 
+export interface SyncResult {
+    success: boolean;
+    synced: number;
+    errors: SyncError[];
+    partials: number;
+}
+
+export interface SyncError {
+    uuid: string;
+    message: string;
+}
+
 export async function saveAsientoOffline(asiento: Omit<AsientoOffline, 'synced'>): Promise<void> {
     try {
         const existing = await getOfflineAsientos();
         existing.push({ ...asiento, synced: false });
         await set(CUADERNO_STORAGE_KEY, existing);
-        logger.info('Asiento saved locally in IndexedDB', { uuid: asiento.offline_uuid });
+        logger.info('Asiento guardado en IndexedDB', { uuid: asiento.offline_uuid });
     } catch (error) {
-        logger.error('Failed to save asiento offline', error as Error);
+        logger.error('Error al guardar asiento offline', error as Error);
         throw error;
     }
 }
@@ -40,7 +52,7 @@ export async function getOfflineAsientos(): Promise<AsientoOffline[]> {
         const data = await get<AsientoOffline[]>(CUADERNO_STORAGE_KEY);
         return data || [];
     } catch (error) {
-        logger.error('Failed to get offline asientos', error as Error);
+        logger.error('Error al leer asientos offline', error as Error);
         return [];
     }
 }
@@ -53,55 +65,121 @@ export async function getUnsyncedAsientos(): Promise<AsientoOffline[]> {
 export async function markAsientoSynced(uuid: string): Promise<void> {
     try {
         const existing = await getOfflineAsientos();
-        const updated = existing.map(a => a.offline_uuid === uuid ? { ...a, synced: true } : a);
-        const remaining = updated.filter(a => !a.synced);
+        // Eliminar del storage local una vez confirmado en Odoo
+        const remaining = existing.filter(a => a.offline_uuid !== uuid);
         await set(CUADERNO_STORAGE_KEY, remaining);
     } catch (error) {
-        logger.error('Failed to mark asiento as synced', error as Error);
+        logger.error('Error al marcar asiento como sincronizado', error as Error);
     }
 }
 
-export async function syncPendingAsientos(): Promise<{ success: boolean; synced: number; errors: any[] }> {
+/**
+ * Sincroniza todos los asientos pendientes con Odoo.
+ * 
+ * - Envía todos los pendientes en una sola llamada al servidor.
+ * - Marca como sincronizados solo los que Odoo confirmó.
+ * - Retorna un resultado detallado con conteo de éxitos y errores.
+ */
+export async function syncPendingAsientos(): Promise<SyncResult> {
     const pending = await getUnsyncedAsientos();
-    if (pending.length === 0) return { success: true, synced: 0, errors: [] };
+    if (pending.length === 0) {
+        return { success: true, synced: 0, errors: [], partials: 0 };
+    }
 
     try {
         const response = await fetch('/api/cuaderno/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ asientos: pending })
+            body: JSON.stringify({ asientos: pending }),
         });
+
+        // Manejar errores HTTP (500, 401, etc.)
+        if (!response.ok) {
+            const text = await response.text();
+            logger.error('HTTP error en sync', undefined, { status: response.status, body: text });
+            return {
+                success: false,
+                synced: 0,
+                errors: [{ uuid: 'all', message: `Error HTTP ${response.status}: ${text.slice(0, 200)}` }],
+                partials: 0,
+            };
+        }
 
         const result = await response.json();
 
-        if (result.success && result.data?.results) {
-            const syncedUuids = result.data.results.filter((r: any) => r.status === 'success').map((r: any) => r.offline_uuid);
+        if (!result.success || !result.data?.results) {
+            return {
+                success: false,
+                synced: 0,
+                errors: [{ uuid: 'all', message: result.error || 'Respuesta inesperada del servidor' }],
+                partials: 0,
+            };
+        }
 
-            for (const asiento of pending) {
-                if (syncedUuids.includes(asiento.offline_uuid)) {
-                    const resultItem = result.data.results.find((r: any) => r.offline_uuid === asiento.offline_uuid);
-                    if (asiento.photos && asiento.photos.length > 0) {
-                        for (const photo of asiento.photos) {
-                            await fetch('/api/cuaderno/upload_photo', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    asiento_id: resultItem.odoo_id,
-                                    file_name: photo.name,
-                                    file_base64: photo.base64,
-                                    mimetype: photo.mimetype
-                                })
-                            });
-                        }
+        const apiResults: any[] = result.data.results;
+        const syncedUuids = apiResults
+            .filter(r => r.status === 'success' || r.status === 'success_partial')
+            .map(r => r.offline_uuid);
+
+        const errorItems: SyncError[] = apiResults
+            .filter(r => r.status === 'error')
+            .map(r => ({ uuid: r.offline_uuid, message: r.error || 'Error desconocido' }));
+
+        // Subir fotos y marcar como sincronizados
+        for (const asiento of pending) {
+            if (!syncedUuids.includes(asiento.offline_uuid)) continue;
+
+            const resultItem = apiResults.find(r => r.offline_uuid === asiento.offline_uuid);
+
+            // Subir fotos si las hay
+            if (asiento.photos && asiento.photos.length > 0 && resultItem?.odoo_id) {
+                for (const photo of asiento.photos) {
+                    try {
+                        await fetch('/api/cuaderno/upload_photo', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                asiento_id: resultItem.odoo_id,
+                                file_name: photo.name,
+                                file_base64: photo.base64,
+                                mimetype: photo.mimetype,
+                            }),
+                        });
+                    } catch (photoErr) {
+                        logger.error('Error subiendo foto', photoErr as Error, {
+                            uuid: asiento.offline_uuid,
+                            odoo_id: resultItem.odoo_id,
+                        });
                     }
-                    await markAsientoSynced(asiento.offline_uuid);
                 }
             }
 
-            return { success: true, synced: syncedUuids.length, errors: [] };
+            await markAsientoSynced(asiento.offline_uuid);
         }
-        return { success: false, synced: 0, errors: [result.error] };
-    } catch (error) {
-        return { success: false, synced: 0, errors: [error] };
+
+        const partials = apiResults.filter(r => r.status === 'success_partial').length;
+
+        logger.info('Sync completado', {
+            total: pending.length,
+            synced: syncedUuids.length,
+            errors: errorItems.length,
+            partials,
+        });
+
+        return {
+            success: errorItems.length === 0,
+            synced: syncedUuids.length,
+            errors: errorItems,
+            partials,
+        };
+
+    } catch (error: any) {
+        logger.error('Error de red en syncPendingAsientos', error as Error);
+        return {
+            success: false,
+            synced: 0,
+            errors: [{ uuid: 'network', message: error?.message || 'Error de red' }],
+            partials: 0,
+        };
     }
 }
