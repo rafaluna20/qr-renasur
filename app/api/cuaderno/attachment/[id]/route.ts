@@ -1,28 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOdooClient } from '@/lib/odoo-client';
-import { StructuredLogger } from '@/lib/observability/structured-logger';
+import { getOdooClient, logger } from '@/lib';
 
 /**
  * GET /api/cuaderno/attachment/[id]
- * 
+ *
  * Descarga un adjunto/foto de un asiento
- * 
- * Características:
- * - Validación de permisos
- * - Stream de datos binarios
- * - Headers apropiados para descarga
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const logger = new StructuredLogger({
-    action: 'download_attachment',
-    requestId: crypto.randomUUID(),
-  });
-
   try {
-    const attachmentId = parseInt(params.id);
+    const resolvedParams = await params;
+    const attachmentId = parseInt(resolvedParams.id);
 
     if (isNaN(attachmentId) || attachmentId <= 0) {
       return NextResponse.json(
@@ -73,8 +63,9 @@ export async function GET(
       headers,
     });
   } catch (error: any) {
-    logger.error('Error descargando adjunto', error, {
-      attachmentId: params.id,
+    const resolvedParams = await params;
+    logger.error('Error descargando adjunto', error as Error, {
+      attachmentId: resolvedParams.id,
     });
 
     return NextResponse.json(
