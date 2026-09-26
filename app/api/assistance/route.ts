@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooAttendance, OdooError } from '@/lib/odoo-client';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { getSessionFromRequest } from '@/lib/session';
+import { puedeActuarSobre } from '@/lib/auth/access-rules';
 
 /**
  * API Route: Consultar Asistencias
@@ -24,6 +26,9 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
   
   try {
+    // Defensa en profundidad (el middleware ya exige sesión): solo se actúa sobre los datos propios, salvo supervisor/admin.
+    const sesion = await getSessionFromRequest(req);
+    if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
     const body = await req.json();
 
     // Validar datos de entrada
@@ -40,6 +45,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { userId, allHistory } = validationResult.data;
+
+    if (!puedeActuarSobre({ id: Number(sesion.id), role: String(sesion.role) }, userId)) {
+      return NextResponse.json({ success: false, error: 'No puedes operar sobre otro empleado' }, { status: 403 });
+    }
     
     // CORRECCION: Usar zona horaria de Peru para fecha de hoy
     const now = new Date();

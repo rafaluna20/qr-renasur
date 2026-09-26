@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
+import { getSessionFromRequest } from '@/lib/session';
+import { ROLES_PRIVILEGIADOS } from '@/lib/auth/access-rules';
+import { NextResponse } from 'next/server';
 
 /**
  * POST /api/cuaderno/sync
@@ -16,6 +19,9 @@ import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
  */
 export async function POST(req: NextRequest) {
     try {
+        const sesion = await getSessionFromRequest(req);
+        if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+        const esPrivilegiado = (ROLES_PRIVILEGIADOS as readonly string[]).includes(String(sesion.role));
         const body = await req.json();
         const asientos = body.asientos;
 
@@ -36,7 +42,8 @@ export async function POST(req: NextRequest) {
                     throw new Error(`cuaderno_id inválido: "${asiento.cuaderno_id}"`);
                 }
 
-                const residenteId = asiento.residente_id ? parseInt(asiento.residente_id) : undefined;
+                // Quien no es supervisor/administrador solo crea asientos a su propio nombre.
+                const residenteId = esPrivilegiado ? (asiento.residente_id ? parseInt(asiento.residente_id) : undefined) : Number(sesion.id);
                 const supervisorId = asiento.supervisor_id ? parseInt(asiento.supervisor_id) : undefined;
 
                 // ──────────────────────────────────────────────────────────────

@@ -19,7 +19,7 @@ export async function POST() {
     const employees = await odoo.searchRead<OdooEmployee>(
       'hr.employee',
       [['active', '=', true]],
-      ['id', 'name', 'work_email', 'identification_id', 'work_phone', 'image_128', 'x_obra_role'],
+      ['id', 'name', 'work_email', 'work_phone', 'image_128', 'x_obra_role'],   // sin identification_id (DNI): es la contraseña del login antiguo
       { limit: 100 }
     );
 

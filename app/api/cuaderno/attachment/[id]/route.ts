@@ -28,7 +28,8 @@ export async function GET(
     // Obtener adjunto de Odoo
     const attachments = await odoo.searchRead(
       'ir.attachment',
-      [['id', '=', attachmentId]],
+      // Solo adjuntos de asientos del cuaderno: antes se podía bajar CUALQUIER adjunto de Odoo probando números.
+      [['id', '=', attachmentId], ['res_model', '=', 'obra.cuaderno.asiento']],
       ['name', 'mimetype', 'datas']
     );
 
@@ -48,9 +49,10 @@ export async function GET(
     // Headers para descarga
     const headers = new Headers();
     headers.set('Content-Type', attachment.mimetype || 'application/octet-stream');
-    headers.set('Content-Disposition', `inline; filename="${attachment.name}"`);
+    headers.set('Content-Disposition', `inline; filename="${String(attachment.name).replace(/["\\r\\n]/g, '_')}"`);
+    headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Content-Length', buffer.length.toString());
-    headers.set('Cache-Control', 'public, max-age=3600'); // 1 hora
+    headers.set('Cache-Control', 'private, no-store'); // contenido privado: nunca en cachés compartidas
 
     logger.info('Adjunto descargado', {
       attachmentId,

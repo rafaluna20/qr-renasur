@@ -1,10 +1,18 @@
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
+import { getSessionFromRequest } from '@/lib/session';
+import { ROLES_PRIVILEGIADOS } from '@/lib/auth/access-rules';
+import { NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
     try {
+        // El rol y el empleado salen de la SESIÓN, no de lo que envíe el cliente (antes bastaba mandar role=supervisor).
+        const sesion = await getSessionFromRequest(req);
+        if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
         const body = await req.json();
-        const { employeeId, role, filter } = body;
+        const { filter } = body;
+        const employeeId = String(sesion.id);
+        const role = (ROLES_PRIVILEGIADOS as readonly string[]).includes(String(sesion.role)) ? 'supervisor' : String(sesion.role);
 
         logger.info('📋 Cuaderno list request received', {
             employeeId,
@@ -112,8 +120,8 @@ export async function POST(req: NextRequest) {
             } : null,
             createdAt: a.create_date,
             preview: {
-                personal: a.x_personal?.substring(0, 50) || '',
-                equipos: a.x_equipos?.substring(0, 50) || '',
+                personal: typeof a.x_personal === 'string' ? a.x_personal.substring(0, 50) : '',
+                equipos: typeof a.x_equipos === 'string' ? a.x_equipos.substring(0, 50) : '',
             },
         }));
 

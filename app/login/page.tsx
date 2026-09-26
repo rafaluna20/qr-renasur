@@ -20,8 +20,15 @@ function LoginContent() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
-  const EMAIL_ADMIN = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  const PASSWORD_ADMIN = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+  // Motivo con el que /api/auth/sso devuelve aquí cuando la entrada desde la billetera falla (mensajes genéricos).
+  const MOTIVOS_SSO: Record<string, string> = {
+    codigo: "El enlace de la billetera venció o ya se usó. Vuelve a abrirlo desde Servicios → Asistencia.",
+    sin_empleado: "Tu correo de la billetera no está registrado como empleado. Pide que lo den de alta con ese mismo correo.",
+    ambiguo: "Tu correo coincide con más de un empleado. Avisa a administración.",
+    configuracion: "La entrada desde la billetera no está configurada. Avisa a administración.",
+    red: "No pudimos verificar tu sesión de la billetera. Inténtalo de nuevo.",
+  };
+  const avisoSso = MOTIVOS_SSO[searchParams.get("sso") ?? ""];
 
   useEffect(() => {
     const pID = searchParams.get("proyectoID");
@@ -89,6 +96,10 @@ function LoginContent() {
               Inicia sesion en QR Generator Studio
             </p>
           </div>
+
+          {avisoSso && (
+            <p role="alert" className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{avisoSso}</p>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
 

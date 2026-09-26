@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooError } from '@/lib/odoo-client';
 import { z } from 'zod';
+import { getSessionFromRequest } from '@/lib/session';
+import { puedeActuarSobre } from '@/lib/auth/access-rules';
 
 /**
  * API Route: Registrar Salida (Check-out)
@@ -20,6 +22,9 @@ const checkOutSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Defensa en profundidad (el middleware ya exige sesión): solo se actúa sobre los datos propios, salvo supervisor/admin.
+    const sesion = await getSessionFromRequest(req);
+    if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
     const body = await req.json();
 
     // Validar datos de entrada
@@ -38,6 +43,18 @@ export async function POST(req: NextRequest) {
     const { registryId, latitude, longitude, accuracy, observation } = validationResult.data;
 
     const odoo = getOdooClient();
+
+    // La salida se marca sobre un registro de asistencia por su id: debe ser del propio empleado (antes se podía cerrar
+    // el registro de cualquiera adivinando el número).
+    const registros = await odoo.searchRead<{ id: number; employee_id: [number, string] | false }>(
+      'hr.attendance', [['id', '=', registryId]], ['employee_id'], { limit: 1 });
+    if (registros.length === 0 || !registros[0].employee_id) {
+      return NextResponse.json({ success: false, error: 'Registro de asistencia no encontrado' }, { status: 404 });
+    }
+    if (!puedeActuarSobre({ id: Number(sesion.id), role: String(sesion.role) }, registros[0].employee_id[0])) {
+      return NextResponse.json({ success: false, error: 'No puedes operar sobre otro empleado' }, { status: 403 });
+    }
+
     const now = new Date();
 
     // CRITICAL: Send UTC to Odoo — Odoo stores all datetimes in UTC.

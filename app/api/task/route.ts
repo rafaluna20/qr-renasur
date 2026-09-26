@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooAnalyticLine } from '@/lib/odoo-client';
 import { z } from 'zod';
+import { getSessionFromRequest } from '@/lib/session';
+import { puedeActuarSobre } from '@/lib/auth/access-rules';
 
 /**
  * API Route: Consultar Lineas Analiticas (Horas registradas)
@@ -15,6 +17,9 @@ const taskQuerySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Defensa en profundidad (el middleware ya exige sesión): solo se actúa sobre los datos propios, salvo supervisor/admin.
+    const sesion = await getSessionFromRequest(req);
+    if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
     const body = await req.json();
 
     const validationResult = taskQuerySchema.safeParse(body);
@@ -30,6 +35,10 @@ export async function POST(req: NextRequest) {
     // Si userId es 0 o invalido (ej: rol admin), retornar vacio directamente
     if (!userId || userId <= 0) {
       return NextResponse.json({ success: true, data: { result: [], count: 0 } });
+    }
+
+    if (!puedeActuarSobre({ id: Number(sesion.id), role: String(sesion.role) }, userId)) {
+      return NextResponse.json({ success: false, error: 'No puedes operar sobre otro empleado' }, { status: 403 });
     }
 
     const odoo = getOdooClient();
