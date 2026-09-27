@@ -41,20 +41,21 @@ interface FilaEmpleado {
   name: string;
   work_email?: string | false;
   x_billetera_cuenta?: string | false;
-  x_obra_role?: string | false;
+  [campo: string]: unknown;
 }
 
 const CAMPO_FALTANTE = /Invalid field|no existe|does not exist/i;
 
 function comoVinculo(empresa: Empresa, fila: FilaEmpleado): Vinculo {
-  const rol = ROLES.includes(fila.x_obra_role as Rol) ? (fila.x_obra_role as Rol) : 'employee';
+  const valor = fila[empresa.campoRol];
+  const rol = ROLES.includes(valor as Rol) ? (valor as Rol) : 'employee';
   return { empresa: empresa.id, empresaNombre: empresa.nombre, id: fila.id, role: empresa.obra ? rol : 'employee', name: fila.name };
 }
 
 async function buscarEnEmpresa(
   empresa: Empresa, identidad: IdentidadBilletera, cliente: ClienteBusqueda,
 ): Promise<{ vinculo?: Vinculo; problema?: Problema['motivo'] }> {
-  const campos = ['id', 'name', 'work_email', ...(empresa.obra ? ['x_obra_role'] : [])];
+  const campos = ['id', 'name', 'work_email', ...(empresa.obra ? [empresa.campoRol] : [])];
   const cuenta = identidad.cuenta.trim().toUpperCase();
 
   // 1) Vínculo aprobado: la cuenta de billetera anotada en la ficha del empleado.

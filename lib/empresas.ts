@@ -20,6 +20,8 @@ export interface Empresa {
   apiKey: string;
   /** El Odoo tiene el módulo de obra (campo x_obra_role, cuaderno). Sin él todos son «employee». */
   obra: boolean;
+  /** Nombre del campo de rol en hr.employee. Renasur lo tiene como x_obra_role; el módulo de Akallpa lo llama obra_role. */
+  campoRol: string;
   /**
    * Permite vincular a un empleado por su correo laboral cuando aún no tiene la cuenta de billetera anotada.
    * Es más débil (quien edite el correo en Odoo podría suplantar): úsalo solo mientras se cargan los vínculos.
@@ -32,6 +34,13 @@ export type EmpresaPublica = Pick<Empresa, 'id' | 'nombre'>;
 const RE_ID = /^[a-z][a-z0-9_-]{1,29}$/;
 
 export class ErrorEmpresas extends Error {}
+
+/** Nombre de campo de Odoo permitido (letras, dígitos y guion bajo): entra en consultas, así que no se acepta cualquier texto. */
+function campoRol(valor: unknown, id: string): string {
+  if (valor === undefined || valor === null || valor === '') return 'x_obra_role';
+  if (typeof valor !== 'string' || !/^[a-z][a-z0-9_]{1,63}$/.test(valor)) throw new ErrorEmpresas(`Empresa «${id}»: campoRol inválido`);
+  return valor;
+}
 
 function texto(valor: unknown, campo: string, id: string): string {
   if (typeof valor !== 'string' || !valor.trim()) throw new ErrorEmpresas(`Empresa «${id}»: falta ${campo}`);
@@ -60,7 +69,7 @@ export function leerEmpresas(env: Record<string, string | undefined> = process.e
     if (!ODOO_URL || !ODOO_DATABASE || !ODOO_USER_ID || !ODOO_API_KEY) return [];
     return [{
       id: 'principal', nombre: env.EMPRESA_NOMBRE?.trim() || 'Empresa', url: ODOO_URL.replace(/\/+$/, ''),
-      database: ODOO_DATABASE, userId: Number(ODOO_USER_ID), apiKey: ODOO_API_KEY, obra: true, vinculoPorCorreo: true,
+      database: ODOO_DATABASE, userId: Number(ODOO_USER_ID), apiKey: ODOO_API_KEY, obra: true, campoRol: 'x_obra_role', vinculoPorCorreo: true,
     }];
   }
 
@@ -88,6 +97,7 @@ export function leerEmpresas(env: Record<string, string | undefined> = process.e
       userId,
       apiKey: texto(e.apiKey, 'apiKey', id),
       obra: e.obra !== false,
+      campoRol: campoRol(e.campoRol, id),
       vinculoPorCorreo: e.vinculoPorCorreo === true,
     };
   });

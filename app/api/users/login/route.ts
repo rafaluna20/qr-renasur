@@ -1,4 +1,5 @@
 import { getSessionFromRequest } from '@/lib/session';
+import { empresaDe } from '@/lib/empresas';
 import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextResponse } from 'next/server';
 import { getOdooClient, OdooEmployee, OdooError } from '@/lib/odoo-client';
@@ -17,20 +18,21 @@ export async function POST(req: Request) {
   try {
     const sesion = await getSessionFromRequest(req);
     if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
-    const odoo = getOdooClient(empresaDeSesion(sesion));
+    const empresa = empresaDe(empresaDeSesion(sesion));
+    const odoo = getOdooClient(empresa.id);
 
     // Obtener empleados activos
     const employees = await odoo.searchRead<OdooEmployee>(
       'hr.employee',
       [['active', '=', true]],
-      ['id', 'name', 'work_email', 'work_phone', 'image_128', 'x_obra_role'],   // sin identification_id (DNI): es la contraseña del login antiguo
+      ['id', 'name', 'work_email', 'work_phone', 'image_128', ...(empresa.obra ? [empresa.campoRol] : [])],   // sin identification_id (DNI): es la contraseña del login antiguo
       { limit: 100 }
     );
 
     // Transformar los empleados para incluir 'obra_role'
     const transformedEmployees = employees.map(employee => ({
       ...employee,
-      obra_role: employee.x_obra_role || 'employee' // Guardamos en memoria como obra_role internamente
+      obra_role: (empresa.obra && (employee as any)[empresa.campoRol]) || 'employee' // Guardamos en memoria como obra_role internamente
     }));
 
     return NextResponse.json({

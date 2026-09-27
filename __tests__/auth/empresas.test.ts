@@ -36,6 +36,14 @@ describe('leerEmpresas', () => {
     for (const m of malas) expect(() => leerEmpresas({ EMPRESAS_JSON: m })).toThrow(ErrorEmpresas);
   });
 
+  test('campoRol: por defecto x_obra_role, configurable y validado', () => {
+    const [a, b] = leerEmpresas({ EMPRESAS_JSON: JSON.stringify([{ ...base, id: 'aa' }, { ...base, id: 'bb', campoRol: 'obra_role' }]) });
+    expect([a.campoRol, b.campoRol]).toEqual(['x_obra_role', 'obra_role']);
+    for (const malo of ['Rol Raro', "x'; drop", 'a', 5]) {
+      expect(() => leerEmpresas({ EMPRESAS_JSON: JSON.stringify([{ ...base, id: 'aa', campoRol: malo }]) })).toThrow(ErrorEmpresas);
+    }
+  });
+
   test('acepta http solo en localhost', () => {
     expect(() => leerEmpresas({ EMPRESAS_JSON: JSON.stringify([{ ...base, id: 'local', url: 'http://localhost:8069/jsonrpc' }]) })).not.toThrow();
   });
@@ -94,6 +102,20 @@ describe('buscarVinculos', () => {
   test('el vínculo por cuenta es exacto: una fila que no coincide no cuenta', async () => {
     const r = await buscarVinculos(identidad, [lista[0]], falso({ renasur: async () => [{ id: 9, name: 'Otra', x_billetera_cuenta: 'WAL00000099' }] }));
     expect(r.vinculos).toEqual([]);
+  });
+
+  test('el rol se lee del campo que la empresa configura (obra_role en Akallpa)', async () => {
+    const conRol = leerEmpresas({ EMPRESAS_JSON: JSON.stringify([{ ...base, id: 'akallpa', campoRol: 'obra_role' }]) });
+    let camposPedidos: string[] = [];
+    const r = await buscarVinculos(identidad, conRol, () => ({
+      searchRead: (async (_m: string, _d: any[], campos: string[]) => {
+        camposPedidos = campos;
+        return [{ id: 3, name: 'A', x_billetera_cuenta: 'WAL00000007', obra_role: 'supervisor' }];
+      }) as any,
+    }));
+    expect(camposPedidos).toContain('obra_role');
+    expect(camposPedidos).not.toContain('x_obra_role');
+    expect(r.vinculos[0].role).toBe('supervisor');
   });
 
   test('sin campo x_obra_role en la empresa, el rol es siempre employee (aunque venga otro)', async () => {

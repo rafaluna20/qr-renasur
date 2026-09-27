@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getOdooClient, OdooEmployee } from '@/lib/odoo-client';
 import { empresas } from '@/lib/empresas';
+import type { Rol } from '@/lib/vinculos';
 import { datosDeSesion } from '@/lib/auth/sesion';
 import { setSessionCookie, createSession } from '@/lib/session';
 import { timingSafeEqual } from 'node:crypto';
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     const employees = await odoo.searchRead<OdooEmployee>(
       'hr.employee',
       [['active', '=', true], ['work_email', '=', email]],
-      ['id', 'name', 'work_email', 'identification_id', 'image_128', ...(empresa.obra ? ['x_obra_role'] : [])],
+      ['id', 'name', 'work_email', 'identification_id', 'image_128', ...(empresa.obra ? [empresa.campoRol] : [])],
       { limit: 1 }
     );
 
@@ -66,7 +67,8 @@ export async function POST(req: Request) {
     }
 
     limpiarIntentos(clave);
-    const obraRole = user.x_obra_role || 'employee';
+    const rolCrudo = empresa.obra ? String((user as any)[empresa.campoRol] || '') : '';
+    const obraRole: Rol = (['employee', 'resident', 'supervisor', 'admin'] as Rol[]).find((r) => r === rolCrudo) ?? 'employee';
 
     const sessionPayload = datosDeSesion(
       { empresa: empresa.id, empresaNombre: empresa.nombre, id: user.id, role: obraRole, name: user.name },
