@@ -1,3 +1,5 @@
+import { getSessionFromRequest } from '@/lib/session';
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooError } from '@/lib/odoo-client';
 import { logger } from '@/lib/logger';
@@ -16,7 +18,9 @@ const GPS_FIELDS = {
 
 export async function GET(req: NextRequest) {
   try {
-    const odoo = getOdooClient();
+    const sesion = await getSessionFromRequest(req);
+    if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+    const odoo = getOdooClient(empresaDeSesion(sesion));
     
     logger.info('Iniciando diagnostico de campos GPS');
     

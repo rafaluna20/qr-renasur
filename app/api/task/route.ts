@@ -1,3 +1,4 @@
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooAnalyticLine } from '@/lib/odoo-client';
 import { z } from 'zod';
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'No puedes operar sobre otro empleado' }, { status: 403 });
     }
 
-    const odoo = getOdooClient();
+    const odoo = getOdooClient(empresaDeSesion(sesion));
 
     // Filtrar por employee_id (disponible con hr_timesheet instalado)
     const tasks = await odoo.searchRead<OdooAnalyticLine>(

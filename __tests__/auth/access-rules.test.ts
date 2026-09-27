@@ -5,7 +5,7 @@ const cerrado = { registroAbierto: false };
 
 describe('reglaDeApi', () => {
   test('solo entrar, salir, SSO y salud son públicas', () => {
-    for (const ruta of ['/api/health', '/api/auth/login', '/api/auth/logout', '/api/auth/sso']) {
+    for (const ruta of ['/api/health', '/api/auth/login', '/api/auth/logout', '/api/auth/sso', '/api/auth/empresa']) {
       expect(reglaDeApi(ruta, cerrado)).toEqual({ tipo: 'publica' });
     }
   });

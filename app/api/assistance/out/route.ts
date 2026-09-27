@@ -1,3 +1,4 @@
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooError } from '@/lib/odoo-client';
 import { z } from 'zod';
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     const { registryId, latitude, longitude, accuracy, observation } = validationResult.data;
 
-    const odoo = getOdooClient();
+    const odoo = getOdooClient(empresaDeSesion(sesion));
 
     // La salida se marca sobre un registro de asistencia por su id: debe ser del propio empleado (antes se podía cerrar
     // el registro de cualquiera adivinando el número).

@@ -9,6 +9,8 @@
  * - Facil de testear
  */
 
+import { empresaDe, reiniciarEmpresas, type Empresa } from './empresas';
+
 interface OdooConfig {
   url: string;
   database: string;
@@ -42,7 +44,12 @@ export class OdooClient {
   private config: OdooConfig;
   private requestId: number = 0;
 
-  constructor() {
+  /** Sin argumentos usa las variables ODOO_* de siempre; con una empresa usa el Odoo de ESA empresa. */
+  constructor(empresa?: Pick<Empresa, 'url' | 'database' | 'userId' | 'apiKey'>) {
+    if (empresa) {
+      this.config = { url: empresa.url, database: empresa.database, userId: empresa.userId, apiKey: empresa.apiKey };
+      return;
+    }
     // Validar que existan las variables de entorno
     const url = process.env.ODOO_URL;
     const database = process.env.ODOO_DATABASE;
@@ -242,24 +249,28 @@ export class OdooClient {
   }
 }
 
-// Singleton instance
-let odooClientInstance: OdooClient | null = null;
+// Un cliente por empresa (cada empresa tiene su propio Odoo, URL y clave).
+const clientes = new Map<string, OdooClient>();
 
 /**
- * Retorna la instancia singleton del cliente Odoo.
- * En desarrollo, invalida el singleton si las env vars cambiaron
- * (útil cuando se edita .env.local sin reiniciar el servidor).
+ * Cliente del Odoo de una empresa. Con varias empresas configuradas el argumento es OBLIGATORIO: usar «la de siempre»
+ * a ciegas mezclaría datos entre empresas, así que en ese caso falla en vez de adivinar.
+ * Debe recibir siempre la empresa de la SESIÓN, nunca una que mande el navegador.
  */
-export function getOdooClient(): OdooClient {
-  if (!odooClientInstance) {
-    odooClientInstance = new OdooClient();
+export function getOdooClient(empresaId?: string): OdooClient {
+  const empresa = empresaDe(empresaId);
+  let cliente = clientes.get(empresa.id);
+  if (!cliente) {
+    cliente = new OdooClient(empresa);
+    clientes.set(empresa.id, cliente);
   }
-  return odooClientInstance;
+  return cliente;
 }
 
-/** Forzar la recreación del cliente (útil para tests o cambios de env) */
+/** Forzar la recreación de los clientes (útil para tests o cambios de env) */
 export function resetOdooClient(): void {
-  odooClientInstance = null;
+  clientes.clear();
+  reiniciarEmpresas();
 }
 
 // Type definitions para modelos comunes de Odoo

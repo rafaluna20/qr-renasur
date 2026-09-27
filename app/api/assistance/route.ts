@@ -1,3 +1,4 @@
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooAttendance, OdooError } from '@/lib/odoo-client';
 import { logger } from '@/lib/logger';
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
       logger.info('Consultando historial completo de asistencias', { userId });
     }
 
-    const odoo = getOdooClient();
+    const odoo = getOdooClient(empresaDeSesion(sesion));
 
     // Consultar asistencias
     const attendances = await odoo.searchRead<OdooAttendance>(

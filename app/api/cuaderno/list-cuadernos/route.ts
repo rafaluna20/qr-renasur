@@ -1,9 +1,14 @@
+import { NextResponse } from 'next/server';
+import { getSessionFromRequest } from '@/lib/session';
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
 
 export async function GET(req: NextRequest) {
     try {
-        const odoo = getOdooClient();
+        const sesion = await getSessionFromRequest(req);
+        if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+        const odoo = getOdooClient(empresaDeSesion(sesion));
         const cuadernosRaw = await odoo.searchRead(
             'obra.cuaderno',
             [],

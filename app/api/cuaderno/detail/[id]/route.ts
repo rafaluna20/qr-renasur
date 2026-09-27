@@ -1,3 +1,5 @@
+import { getSessionFromRequest } from '@/lib/session';
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, logger } from '@/lib';
 
@@ -24,8 +26,11 @@ export async function GET(
 
     logger.info('📋 Obteniendo detalle de asiento', { asientoId });
 
-    // Obtener datos del asiento
-    const asientoData = await fetchAsientoDetailFromOdoo(asientoId);
+    const sesion = await getSessionFromRequest(req);
+    if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+
+    // Obtener datos del asiento (del Odoo de la empresa de la sesión)
+    const asientoData = await fetchAsientoDetailFromOdoo(asientoId, empresaDeSesion(sesion));
 
     if (!asientoData) {
       logger.warn('Asiento no encontrado', { asientoId });
@@ -63,9 +68,9 @@ export async function GET(
 /**
  * Obtiene el detalle completo del asiento desde Odoo
  */
-async function fetchAsientoDetailFromOdoo(asientoId: number): Promise<any | null> {
+async function fetchAsientoDetailFromOdoo(asientoId: number, empresa?: string): Promise<any | null> {
   try {
-    const odoo = getOdooClient();
+    const odoo = getOdooClient(empresa);
 
     // Campos completos incluyendo relaciones
     const fields = [

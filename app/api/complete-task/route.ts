@@ -1,3 +1,4 @@
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
 import { puedeActuarSobre } from '@/lib/auth/access-rules';

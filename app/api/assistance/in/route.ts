@@ -1,3 +1,4 @@
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooError } from '@/lib/odoo-client';
 import { logger } from '@/lib/logger';
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
       hasGPS: !!(latitude && longitude),
     });
 
-    const odoo = getOdooClient();
+    const odoo = getOdooClient(empresaDeSesion(sesion));
 
     // CORRECCION CRITICA: Buscar CUALQUIER registro abierto, no solo de hoy
     // Esto previene el error cuando hay registros abiertos de dias anteriores

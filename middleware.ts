@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifySession } from './lib/session';
 import { reglaDeApi, rolPermitido } from './lib/auth/access-rules';
+import { empresas } from './lib/empresas';
 
 const json = (status: number, error: string) =>
   NextResponse.json({ success: false, error }, { status, headers: { 'cache-control': 'no-store' } });
@@ -21,12 +22,14 @@ export async function middleware(request: NextRequest) {
     const token = cabecera?.startsWith('Bearer ') ? cabecera.slice(7) : sessionCookie;
     const payload = token ? await verifySession(token) : null;
     if (!payload) return json(401, 'No autenticado');
+    // Con varias empresas, una sesión sin empresa no se adivina: debe volver a entrar (o elegir empresa).
+    if (!payload.empresa && empresas().length > 1) return json(401, 'Elige tu empresa');
     if (!rolPermitido(payload.role, regla.roles)) return json(403, 'No tienes permiso para esta acción');
     return NextResponse.next();
   }
 
   // ── Páginas ────────────────────────────────────────────────────────────────────────────────────────────────────
-  if (path.startsWith('/_next') || path === '/login' || path === '/register') {
+  if (path.startsWith('/_next') || path === '/login' || path === '/register' || path === '/elegir-empresa') {
     if (path === '/login' && sessionCookie) {
       const payload = await verifySession(sessionCookie);
       if (payload) {

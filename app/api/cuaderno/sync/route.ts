@@ -1,3 +1,4 @@
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
 import { getSessionFromRequest } from '@/lib/session';
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
             return handleAPIError(new Error('No se enviaron asientos para sincronizar'));
         }
 
-        const odoo = getOdooClient();
+        const odoo = getOdooClient(empresaDeSesion(sesion));
         const results = [];
 
         for (const asiento of asientos) {

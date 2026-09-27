@@ -1,3 +1,6 @@
+import { NextResponse } from 'next/server';
+import { getSessionFromRequest } from '@/lib/session';
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
 import { getCacheManager, CacheKeyBuilder } from '@/lib/cache/cache-manager';
@@ -11,7 +14,9 @@ export async function POST(req: NextRequest) {
         const validated = validateAsientoAction(body);
         const { id, observacion } = validated;
 
-        const odoo = getOdooClient();
+        const sesion = await getSessionFromRequest(req);
+        if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+        const odoo = getOdooClient(empresaDeSesion(sesion));
 
         // Llamar al metodo del modelo
         await odoo.execute_kw(

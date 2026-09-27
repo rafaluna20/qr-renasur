@@ -1,3 +1,5 @@
+import { getSessionFromRequest } from '@/lib/session';
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextResponse } from 'next/server';
 import { getOdooClient, OdooEmployee, OdooError } from '@/lib/odoo-client';
 
@@ -11,9 +13,11 @@ import { getOdooClient, OdooEmployee, OdooError } from '@/lib/odoo-client';
  * y no exponer todos los usuarios.
  */
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    const odoo = getOdooClient();
+    const sesion = await getSessionFromRequest(req);
+    if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+    const odoo = getOdooClient(empresaDeSesion(sesion));
 
     // Obtener empleados activos
     const employees = await odoo.searchRead<OdooEmployee>(

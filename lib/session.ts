@@ -18,19 +18,25 @@ export function claveDeSesion(env: Record<string, string | undefined> = process.
   return new TextEncoder().encode(CLAVE_SOLO_PARA_DESARROLLO);
 }
 
-export async function createSession(payload: any) {
+export async function createSession(payload: any, duracion: string = "7d") {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d") // 1 semana de expiracion
+    .setExpirationTime(duracion) // 1 semana de expiracion
     .sign(claveDeSesion());
 }
 
-export async function verifySession(session: string | undefined = "") {
+/**
+ * Valida una sesión. Los tokens «pendientes» (la persona ya se identificó pero aún no eligió empresa) NO sirven como
+ * sesión: solo se aceptan cuando se piden expresamente (`{ pendiente: true }`), para el paso de elegir empresa.
+ */
+export async function verifySession(session: string | undefined = "", opciones: { pendiente?: boolean } = {}) {
   try {
     const { payload } = await jwtVerify(session, claveDeSesion(), {
       algorithms: ["HS256"],
     });
+    const esPendiente = payload.tipo === "pendiente";
+    if (esPendiente !== Boolean(opciones.pendiente)) return null;
     return payload;
   } catch (error) {
     return null;
@@ -72,4 +78,30 @@ export async function setSessionCookie(payload: any) {
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
   cookieStore.delete("terra_session");
+  cookieStore.delete("terra_pendiente");
+}
+
+/** Cookie del paso intermedio «elegir empresa» (10 minutos; no da acceso a ninguna API). */
+export async function setPendingCookie(payload: Record<string, unknown>) {
+  const token = await createSession({ ...payload, tipo: "pendiente" }, "10m");
+  const cookieStore = await cookies();
+  cookieStore.set("terra_pendiente", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 10 * 60,
+  });
+}
+
+export async function getPending() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("terra_pendiente")?.value;
+  if (!token) return null;
+  return await verifySession(token, { pendiente: true });
+}
+
+export async function clearPendingCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete("terra_pendiente");
 }

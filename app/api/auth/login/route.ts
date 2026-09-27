@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getOdooClient, OdooEmployee } from '@/lib/odoo-client';
+import { empresas } from '@/lib/empresas';
+import { datosDeSesion } from '@/lib/auth/sesion';
 import { setSessionCookie, createSession } from '@/lib/session';
 import { timingSafeEqual } from 'node:crypto';
 import { limpiarIntentos, registrarIntento } from '@/lib/auth/rate-limit';
@@ -18,7 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Ingresa desde tu billetera (Servicios → Asistencia)' }, { status: 403 });
     }
 
-    const { email, password } = await req.json();
+    const { email, password, empresa: empresaPedida } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ success: false, error: 'Faltan credenciales' }, { status: 400 });
@@ -35,13 +37,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const odoo = getOdooClient();
+    // La empresa se elige AQUÍ (todavía no hay sesión) y la persona se autentica contra el Odoo de ESA empresa.
+    // Con una sola empresa configurada no hace falta indicarla.
+    const lista = empresas();
+    const empresa = empresaPedida ? lista.find((e) => e.id === empresaPedida) : lista.length === 1 ? lista[0] : undefined;
+    if (!empresa) {
+      return NextResponse.json({ success: false, error: 'Indica la empresa', empresas: lista.map((e) => ({ id: e.id, nombre: e.nombre })) }, { status: 400 });
+    }
+    const odoo = getOdooClient(empresa.id);
 
     // Buscar empleado por email
     const employees = await odoo.searchRead<OdooEmployee>(
       'hr.employee',
       [['active', '=', true], ['work_email', '=', email]],
-      ['id', 'name', 'work_email', 'identification_id', 'image_128', 'x_obra_role'],
+      ['id', 'name', 'work_email', 'identification_id', 'image_128', ...(empresa.obra ? ['x_obra_role'] : [])],
       { limit: 1 }
     );
 
@@ -59,12 +68,11 @@ export async function POST(req: Request) {
     limpiarIntentos(clave);
     const obraRole = user.x_obra_role || 'employee';
 
-    const sessionPayload = {
-      id: user.id,
-      email: user.work_email,
-      role: obraRole,
-      name: user.name,
-    };
+    const sessionPayload = datosDeSesion(
+      { empresa: empresa.id, empresaNombre: empresa.nombre, id: user.id, role: obraRole, name: user.name },
+      [{ empresa: empresa.id, empresaNombre: empresa.nombre, id: user.id, role: obraRole, name: user.name }],
+      { email: user.work_email, cuenta: '' },
+    );
 
     // Crear sesion HTTP-Only para web
     await setSessionCookie(sessionPayload);

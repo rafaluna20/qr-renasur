@@ -1,3 +1,4 @@
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
 import { getSessionFromRequest } from '@/lib/session';
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
             return handleAPIError(new Error('role es requerido'));
         }
 
-        const odoo = getOdooClient();
+        const odoo = getOdooClient(empresaDeSesion(sesion));
 
         // Domain base: supervisors see all; residents see only their own
         let domain: any[] = role === 'supervisor'

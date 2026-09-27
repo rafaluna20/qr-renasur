@@ -8,6 +8,8 @@ export interface LogContext {
   requestId?: string;
   userId?: string;
   employeeId?: string;
+  /** Empresa (su Odoo) a la que pertenece employeeId: sin ella, con varias empresas, el registro de auditoría se omite. */
+  empresa?: string;
   role?: string;
   action?: string;
   resource?: string;
@@ -317,7 +319,7 @@ export class StructuredLogger {
         return;
       }
 
-      const odoo = getOdooClient();
+      const odoo = getOdooClient(this.context.empresa);
 
       // Verificar si existe el modelo de auditoría
       // Si no existe, solo logueamos pero no fallamos

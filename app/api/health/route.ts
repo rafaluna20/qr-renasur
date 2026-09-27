@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOdooClient } from '@/lib/odoo-client';
+import { empresas } from '@/lib/empresas';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { logger } from '@/lib/logger';
 
@@ -39,35 +39,18 @@ async function checkOdoo(): Promise<CheckStatus> {
   const start = Date.now();
   
   try {
-    const odoo = getOdooClient();
-    
-    // Intentar una operacion simple (obtener version)
-    // En lugar de hacer una query real, solo verificamos que el cliente se inicializo
-    if (!odoo) {
+    const configuradas = empresas();
+    if (configuradas.length === 0) {
       return {
         status: 'down',
-        message: 'Cliente Odoo no inicializado',
-        responseTime: Date.now() - start,
-      };
-    }
-
-    // Verificar que las variables de entorno existen
-    const hasVars = process.env.ODOO_URL && 
-                   process.env.ODOO_DATABASE && 
-                   process.env.ODOO_USER_ID && 
-                   process.env.ODOO_API_KEY;
-
-    if (!hasVars) {
-      return {
-        status: 'down',
-        message: 'Variables de entorno de Odoo faltantes',
+        message: 'Ninguna empresa (Odoo) configurada',
         responseTime: Date.now() - start,
       };
     }
 
     return {
       status: 'up',
-      message: 'Odoo configurado correctamente',
+      message: `${empresas().length} empresa(s) configurada(s)`,
       responseTime: Date.now() - start,
     };
 

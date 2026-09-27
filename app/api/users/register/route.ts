@@ -1,3 +1,5 @@
+import { getSessionFromRequest } from '@/lib/session';
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, OdooError } from '@/lib/odoo-client';
 import { z } from 'zod';
@@ -37,7 +39,9 @@ export async function POST(req: NextRequest) {
     const { name, email, phone, dni } = validationResult.data;
 
     // Usar cliente Odoo centralizado
-    const odoo = getOdooClient();
+    // Con sesión (administrador): en SU empresa. Sin sesión (auto-registro abierto a propósito): solo si hay una única empresa.
+    const sesion = await getSessionFromRequest(req);
+    const odoo = getOdooClient(empresaDeSesion(sesion));
 
     // Verificar si el empleado ya existe
     const existing = await odoo.searchCount('hr.employee', [
