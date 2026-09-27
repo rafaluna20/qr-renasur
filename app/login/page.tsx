@@ -19,6 +19,26 @@ function LoginContent() {
   });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
+  // Empresas entre las que elegir (si hay más de una). El QR de asistencia puede traer ?empresa=..., y se recuerda la última.
+  const [empresas, setEmpresas] = useState<{ id: string; nombre: string }[]>([]);
+  const [empresa, setEmpresa] = useState("");
+
+  useEffect(() => {
+    let vigente = true;
+    fetch("/api/auth/empresas", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!vigente || !Array.isArray(d?.empresas)) return;
+        setEmpresas(d.empresas);
+        const pedida = searchParams.get("empresa") || localStorage.getItem("empresaID") || "";
+        const valida = d.empresas.find((e: { id: string }) => e.id === pedida);
+        setEmpresa(valida ? valida.id : d.empresas.length === 1 ? d.empresas[0].id : "");
+      })
+      .catch(() => {});
+    return () => {
+      vigente = false;
+    };
+  }, [searchParams]);
 
   // Motivo con el que /api/auth/sso devuelve aquí cuando la entrada desde la billetera falla (mensajes genéricos).
   const MOTIVOS_SSO: Record<string, string> = {
@@ -50,6 +70,11 @@ function LoginContent() {
       return;
     }
 
+    if (empresas.length > 1 && !empresa) {
+      setErrors({ email: "Elige tu empresa" });
+      return;
+    }
+
     setLoading(true);
     setErrors({});
     
@@ -57,7 +82,7 @@ function LoginContent() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, password: formData.password })
+        body: JSON.stringify({ email: formData.email, password: formData.password, empresa: empresa || undefined })
       });
       const data = await response.json();
       
@@ -76,6 +101,7 @@ function LoginContent() {
       localStorage.setItem("userID", user.id);
       localStorage.setItem("userImage", user.image_128 ? String(user.image_128) : "");
       localStorage.setItem("userName", user.name);
+      if (user.empresa) localStorage.setItem("empresaID", String(user.empresa));
       
       router.push("/");
     } catch (e) {
@@ -102,6 +128,22 @@ function LoginContent() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {empresas.length > 1 && (
+              <div className="space-y-2">
+                <label htmlFor="empresa" className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Empresa</label>
+                <select
+                  id="empresa"
+                  value={empresa}
+                  onChange={(e) => setEmpresa(e.target.value)}
+                  className="flex h-11 w-full rounded-xl border border-zinc-200 bg-transparent px-4 py-2 text-sm dark:border-zinc-800"
+                >
+                  <option value="">Elige tu empresa…</option>
+                  {empresas.map((e) => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
 
             <div className="space-y-2">

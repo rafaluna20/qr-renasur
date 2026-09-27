@@ -172,6 +172,7 @@ function HomeContent() {
         localStorage.setItem("userRole", String(u.role));
         localStorage.setItem("userID", String(u.id));
         localStorage.setItem("userName", String(u.name ?? ""));
+        if (u.empresa) localStorage.setItem("empresaID", String(u.empresa));
         if (!mismoUsuario) localStorage.setItem("userImage", "");
         setIsAuthenticated(true);
         setUserRole(u.role);
@@ -400,7 +401,11 @@ function HomeContent() {
 
   const qrData = useMemo(() => {
     if (userRole === "admin") {
-      if (adminMode === "asistencia") return `${URL_PUBLIC}/login`;
+      if (adminMode === "asistencia") {
+        // El QR fijo de asistencia lleva la empresa del administrador, para que quien lo escanee entre a la suya.
+        const empresaQr = typeof window !== "undefined" ? localStorage.getItem("empresaID") : null;
+        return empresaQr ? `${URL_PUBLIC}/login?empresa=${encodeURIComponent(empresaQr)}` : `${URL_PUBLIC}/login`;
+      }
       if (isValid) {
         const { proyecto, tarea } = formData;
         return `${URL_PUBLIC}/?proyectoID=${proyecto}&tareaID=${tarea}`;

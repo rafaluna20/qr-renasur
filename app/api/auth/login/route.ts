@@ -88,6 +88,7 @@ export async function POST(req: Request) {
         email: user.work_email,
         role: obraRole,
         name: user.name,
+        empresa: empresa.id,
         image_128: user.image_128
       }
     });

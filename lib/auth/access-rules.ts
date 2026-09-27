@@ -9,7 +9,7 @@
 export type Regla = { tipo: "publica" } | { tipo: "sesion"; roles?: readonly string[] };
 
 /** Rutas sin sesión: entrar, salir, el inicio de sesión único y el chequeo de salud. Coincidencia EXACTA. */
-const PUBLICAS = new Set(["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/sso", "/api/auth/empresa"]);
+const PUBLICAS = new Set(["/api/health", "/api/auth/login", "/api/auth/logout", "/api/auth/sso", "/api/auth/empresa", "/api/auth/empresas"]);
 // /api/auth/empresa (elegir o cambiar de empresa) valida por su cuenta la cookie pendiente o la sesión.
 
 export const ROLES_PRIVILEGIADOS = ["supervisor", "admin"] as const;
