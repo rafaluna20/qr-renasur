@@ -138,18 +138,55 @@ function HomeContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    const auth = localStorage.getItem("isAuthenticated");
-    const role = localStorage.getItem("userRole") as any;
-    const name = localStorage.getItem("userName");
-    const image = localStorage.getItem("userImage");
-    if (!auth || !role) {
-      router.push("/login");
-    } else {
+    // La sesión (cookie firmada) es la verdad: se confirma con el servidor y se copia a localStorage. Así también
+    // funciona al entrar por la billetera (SSO), que no pasa por el formulario de login, y nunca se muestra la
+    // identidad de otra persona que dejó datos viejos en este navegador.
+    let vigente = true;
+    const desdeLocal = () => {
+      const auth = localStorage.getItem("isAuthenticated");
+      const role = localStorage.getItem("userRole") as any;
+      if (!auth || !role) {
+        router.push("/login");
+        return;
+      }
       setIsAuthenticated(true);
       setUserRole(role);
-      setUserName(name || "");
-      setUserImage(image || "");
-    }
+      setUserName(localStorage.getItem("userName") || "");
+      setUserImage(localStorage.getItem("userImage") || "");
+    };
+
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then(async (r) => {
+        if (!vigente) return;
+        if (r.status === 401) {
+          ["isAuthenticated", "userRole", "userID", "userEmail", "userImage", "userName"].forEach((k) => localStorage.removeItem(k));
+          router.push("/login");
+          return;
+        }
+        const data = await r.json();
+        const u = data?.user;
+        if (!u) return desdeLocal();
+        const mismoUsuario = localStorage.getItem("userID") === String(u.id);
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("userEmail", String(u.email ?? ""));
+        localStorage.setItem("userRole", String(u.role));
+        localStorage.setItem("userID", String(u.id));
+        localStorage.setItem("userName", String(u.name ?? ""));
+        if (!mismoUsuario) localStorage.setItem("userImage", "");
+        setIsAuthenticated(true);
+        setUserRole(u.role);
+        setUserName(String(u.name ?? ""));
+        setUserImage(mismoUsuario ? localStorage.getItem("userImage") || "" : "");
+        if (!mismoUsuario) tasksCompleted();
+      })
+      .catch(() => {
+        // Sin conexión (app instalada): se usa lo último que se guardó.
+        if (vigente) desdeLocal();
+      });
+    return () => {
+      vigente = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   useEffect(() => {
