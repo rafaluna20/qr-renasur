@@ -95,6 +95,19 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Error logging in:', error);
-    return NextResponse.json({ success: false, error: 'Error del servidor' }, { status: 500 });
+    // Se distingue el tipo de falla (sin exponer detalles internos) para poder corregir la configuración de una empresa.
+    const texto = String((error as Error)?.message ?? error);
+    const motivo = /access ?denied|accesserror|not allowed|permiso/i.test(texto) ? 'odoo_acceso'
+      : /HTTP error|Failed to communicate|fetch failed|ENOTFOUND|ECONN/i.test(texto) ? 'odoo_conexion'
+      : /Invalid field/i.test(texto) ? 'odoo_campo'
+      : /empresa|EMPRESAS_JSON/i.test(texto) ? 'configuracion' : 'interno';
+    const mensajes: Record<string, string> = {
+      odoo_acceso: 'La empresa rechazó la conexión (usuario o clave de servicio incorrectos). Avisa a administración.',
+      odoo_conexion: 'No se pudo conectar con el Odoo de la empresa (dirección incorrecta o caído). Avisa a administración.',
+      odoo_campo: 'Al Odoo de la empresa le falta un campo requerido. Avisa a administración.',
+      configuracion: 'La configuración de la empresa es inválida. Avisa a administración.',
+      interno: 'Error del servidor',
+    };
+    return NextResponse.json({ success: false, error: mensajes[motivo], motivo }, { status: 500 });
   }
 }
