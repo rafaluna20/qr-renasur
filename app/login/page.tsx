@@ -19,6 +19,31 @@ function LoginContent() {
   });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
+  // Si ya hay una sesión válida no se pide login: aplica al abrir la página y también al volver con «Atrás», cuando el
+  // navegador restaura la página tal como se dejó (con el botón en «Cargando…»).
+  useEffect(() => {
+    let vigente = true;
+    const revisar = () => {
+      fetch("/api/auth/me", { cache: "no-store" })
+        .then((r) => {
+          if (vigente && r.ok) router.replace("/");
+        })
+        .catch(() => {});
+    };
+    const alMostrar = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        setLoading(false);
+        revisar();
+      }
+    };
+    revisar();
+    window.addEventListener("pageshow", alMostrar);
+    return () => {
+      vigente = false;
+      window.removeEventListener("pageshow", alMostrar);
+    };
+  }, [router]);
+
   // Empresas entre las que elegir (si hay más de una). El QR de asistencia puede traer ?empresa=..., y se recuerda la última.
   const [empresas, setEmpresas] = useState<{ id: string; nombre: string }[]>([]);
   const [empresa, setEmpresa] = useState("");
@@ -103,7 +128,8 @@ function LoginContent() {
       localStorage.setItem("userName", user.name);
       if (user.empresa) localStorage.setItem("empresaID", String(user.empresa));
       
-      router.push("/");
+      // replace: «Atrás» no debe devolver a esta pantalla de login.
+      router.replace("/");
     } catch (e) {
       setErrors({ password: 'Error de red. Intentalo de nuevo.' });
       setLoading(false);
