@@ -47,6 +47,8 @@ function LoginContent() {
   // Empresas entre las que elegir (si hay más de una). El QR de asistencia puede traer ?empresa=..., y se recuerda la última.
   const [empresas, setEmpresas] = useState<{ id: string; nombre: string }[]>([]);
   const [empresa, setEmpresa] = useState("");
+  // Con la empresa ya conocida (QR o recuerdo de la última vez) no se pregunta; solo se muestra si la persona pide cambiarla.
+  const [cambiandoEmpresa, setCambiandoEmpresa] = useState(false);
 
   useEffect(() => {
     let vigente = true;
@@ -154,7 +156,16 @@ function LoginContent() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {empresas.length > 1 && (
+            {empresas.length > 1 && empresa && !cambiandoEmpresa && (
+              <p className="rounded-xl bg-zinc-100 px-4 py-3 text-center text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                Ingresando a <strong>{empresas.find((e) => e.id === empresa)?.nombre}</strong>{" "}
+                <button type="button" onClick={() => setCambiandoEmpresa(true)} className="ml-1 text-xs underline">
+                  Cambiar empresa
+                </button>
+              </p>
+            )}
+
+            {empresas.length > 1 && (!empresa || cambiandoEmpresa) && (
               <div className="space-y-2">
                 <label htmlFor="empresa" className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Empresa</label>
                 <select
