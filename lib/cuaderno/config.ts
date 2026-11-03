@@ -1,12 +1,23 @@
+import { empresas, type Empresa } from '../empresas';
+
 /**
- * Interruptor de la tipología de asientos (fase 2 del cuaderno).
+ * Interruptor de la tipologia de asientos (fase 2 y 3 del cuaderno), POR EMPRESA.
  *
- * Los campos nuevos (tipo, asiento citado, fecha de firma, plazo) solo existen en el Odoo DESPUÉS de actualizar el módulo
- * `obras_cuaderno`. Mientras CUADERNO_TIPOS no sea «true» la app se comporta como antes y no pide ni envía esos campos
- * (pedirlos a un Odoo sin actualizar devolvería «Invalid field» y rompería la lista y el detalle).
+ * Los campos nuevos (tipo, asiento citado, fecha de firma, plazo, huella) solo existen en el Odoo DESPUES de actualizar el
+ * modulo `obras_cuaderno`, y cada empresa tiene su propio Odoo. Se enciende con `"cuadernoTipos": true` en la entrada de
+ * la empresa en EMPRESAS_JSON; si no se indica, vale la variable global CUADERNO_TIPOS (por defecto apagada). Pedir esos
+ * campos a un Odoo sin actualizar devolveria «Invalid field» y romperia la lista y el detalle.
+ *
+ * Sin empresa conocida (y con varias configuradas) devuelve false: nunca se adivina.
  */
-export function tiposActivos(env: Record<string, string | undefined> = process.env): boolean {
-  return env.CUADERNO_TIPOS?.trim().toLowerCase() === 'true';
+export function tiposActivos(empresaId?: unknown, lista?: Empresa[]): boolean {
+  try {
+    const todas = lista ?? empresas();
+    const e = typeof empresaId === 'string' ? todas.find((x) => x.id === empresaId) : todas.length === 1 ? todas[0] : undefined;
+    return e?.cuadernoTipos === true;
+  } catch {
+    return false;
+  }
 }
 
 /** Campos extra que se leen de obra.cuaderno.asiento cuando la tipología está activa. */

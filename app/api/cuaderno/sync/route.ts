@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         }
 
         const odoo = getOdooClient(empresaDeSesion(sesion));
+        const tipos = tiposActivos(empresaDeSesion(sesion));
         const results = [];
 
         for (const crudo of asientos) {
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
 
                 // Tipologia (solo con el interruptor encendido y el Odoo ya actualizado): el tipo debe corresponder al rol, los
                 // que no son informativos exigen Hecho-Causa-Efecto-Solicitud y las respuestas/aclaraciones deben citar un asiento.
-                if (tiposActivos()) {
+                if (tipos) {
                     const tipo = asiento.tipo || TIPO_POR_DEFECTO;
                     const def = tipoDe(tipo);
                     if (!def) throw new Error(`Tipo de asiento desconocido: ${tipo}`);

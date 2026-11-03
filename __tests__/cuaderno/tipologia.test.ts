@@ -85,10 +85,34 @@ describe('estado del plazo de respuesta', () => {
   });
 });
 
-describe('interruptor CUADERNO_TIPOS', () => {
-  test('apagado por defecto; solo «true» lo enciende', () => {
-    expect(tiposActivos({})).toBe(false);
-    expect(tiposActivos({ CUADERNO_TIPOS: '1' })).toBe(false);
-    expect(tiposActivos({ CUADERNO_TIPOS: ' TRUE ' })).toBe(true);
+describe('interruptor de tipología por empresa', () => {
+  const base = { nombre: 'X', url: 'https://x.test/jsonrpc', database: 'db', userId: 1, apiKey: 'k', obra: true, campoRol: 'x_obra_role', vinculoPorCorreo: false };
+  const lista = [
+    { id: 'renasur', ...base, cuadernoTipos: true },
+    { id: 'akallpa', ...base, cuadernoTipos: false },
+  ];
+  test('cada empresa tiene su propio interruptor', () => {
+    expect(tiposActivos('renasur', lista)).toBe(true);
+    expect(tiposActivos('akallpa', lista)).toBe(false);
+  });
+  test('empresa desconocida, ausente o inválida con varias configuradas: apagado (no se adivina)', () => {
+    expect(tiposActivos('otra', lista)).toBe(false);
+    expect(tiposActivos(undefined, lista)).toBe(false);
+    expect(tiposActivos(5, lista)).toBe(false);
+  });
+  test('con una sola empresa configurada y sin id, vale la única', () => {
+    expect(tiposActivos(undefined, [lista[0]])).toBe(true);
+    expect(tiposActivos(undefined, [lista[1]])).toBe(false);
+  });
+});
+
+describe('lectura de cuadernoTipos en la configuración', () => {
+  const { leerEmpresas } = require('@/lib/empresas');
+  const json = (extra: object) => JSON.stringify([{ id: 'renasur', nombre: 'R', url: 'https://r.test/jsonrpc', database: 'd', userId: 1, apiKey: 'k', ...extra }]);
+  test('por defecto sigue a la variable global; el valor de la empresa manda sobre ella', () => {
+    expect(leerEmpresas({ EMPRESAS_JSON: json({}) })[0].cuadernoTipos).toBe(false);
+    expect(leerEmpresas({ EMPRESAS_JSON: json({}), CUADERNO_TIPOS: 'true' })[0].cuadernoTipos).toBe(true);
+    expect(leerEmpresas({ EMPRESAS_JSON: json({ cuadernoTipos: true }) })[0].cuadernoTipos).toBe(true);
+    expect(leerEmpresas({ EMPRESAS_JSON: json({ cuadernoTipos: false }), CUADERNO_TIPOS: 'true' })[0].cuadernoTipos).toBe(false);
   });
 });

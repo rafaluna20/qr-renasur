@@ -104,7 +104,7 @@ async function fetchAsientoDetailFromOdoo(
       'attachment_ids', // IDs de fotos/adjuntos
       'create_date',
       'write_date',
-      ...(tiposActivos() ? [...CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id'), ...CAMPOS_INTEGRIDAD] : []),
+      ...(tiposActivos(empresa) ? [...CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id'), ...CAMPOS_INTEGRIDAD] : []),
     ];
 
     const asientos = await odoo.searchRead(
@@ -145,7 +145,7 @@ async function fetchAsientoDetailFromOdoo(
 
     // Tipología (solo si el Odoo ya tiene los campos): tipo, asiento citado, plazo y respuestas recibidas.
     let tipologia: Record<string, unknown> = {};
-    if (tiposActivos()) {
+    if (tiposActivos(empresa)) {
       const respuestas = await odoo.searchRead<any>(
         'obra.cuaderno.asiento', [['asiento_referido_id', '=', asientoId]], ['id', 'name', 'tipo', 'date', 'state'], { order: 'id asc', limit: 50 });
       tipologia = {

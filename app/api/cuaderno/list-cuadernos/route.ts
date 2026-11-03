@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         const cuadernosRaw = await odoo.searchRead(
             'obra.cuaderno',
             // Un cuaderno cerrado no admite asientos nuevos (con la fase 2 activa ya existe el campo de estado).
-            tiposActivos() ? [['state', '!=', 'closed']] : [],
+            tiposActivos(empresaDeSesion(sesion)) ? [['state', '!=', 'closed']] : [],
             ['id', 'project_id', 'name', 'display_name'],
             { order: 'id desc' }
         );

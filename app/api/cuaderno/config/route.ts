@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
+import { empresaDeSesion } from '@/lib/auth/sesion';
 import { tiposActivos } from '@/lib/cuaderno/config';
 import { CATEGORIAS, tiposPermitidos } from '@/lib/cuaderno/tipologia';
 
@@ -7,7 +8,7 @@ import { CATEGORIAS, tiposPermitidos } from '@/lib/cuaderno/tipologia';
 export async function GET(req: Request) {
     const sesion = await getSessionFromRequest(req);
     if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
-    const activa = tiposActivos();
+    const activa = tiposActivos(empresaDeSesion(sesion));
     return NextResponse.json(
         {
             success: true,

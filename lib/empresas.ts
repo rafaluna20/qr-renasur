@@ -27,6 +27,11 @@ export interface Empresa {
    * Es más débil (quien edite el correo en Odoo podría suplantar): úsalo solo mientras se cargan los vínculos.
    */
   vinculoPorCorreo: boolean;
+  /**
+   * Tipologia de asientos del cuaderno de obra (fase 2 y 3): solo debe encenderse cuando el modulo `obras_cuaderno`
+   * actualizado esta instalado en el Odoo de ESA empresa. Si no se indica, vale la variable global CUADERNO_TIPOS.
+   */
+  cuadernoTipos: boolean;
 }
 
 export type EmpresaPublica = Pick<Empresa, 'id' | 'nombre'>;
@@ -70,6 +75,7 @@ export function leerEmpresas(env: Record<string, string | undefined> = process.e
     return [{
       id: 'principal', nombre: env.EMPRESA_NOMBRE?.trim() || 'Empresa', url: ODOO_URL.replace(/\/+$/, ''),
       database: ODOO_DATABASE, userId: Number(ODOO_USER_ID), apiKey: ODOO_API_KEY, obra: true, campoRol: 'x_obra_role', vinculoPorCorreo: true,
+      cuadernoTipos: env.CUADERNO_TIPOS?.trim().toLowerCase() === 'true',
     }];
   }
 
@@ -99,6 +105,7 @@ export function leerEmpresas(env: Record<string, string | undefined> = process.e
       obra: e.obra !== false,
       campoRol: campoRol(e.campoRol, id),
       vinculoPorCorreo: e.vinculoPorCorreo === true,
+      cuadernoTipos: typeof e.cuadernoTipos === 'boolean' ? e.cuadernoTipos : env.CUADERNO_TIPOS?.trim().toLowerCase() === 'true',
     };
   });
 }

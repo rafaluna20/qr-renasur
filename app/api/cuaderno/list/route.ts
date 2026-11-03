@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         }
 
         const odoo = getOdooClient(empresaDeSesion(sesion));
+        const tipos = tiposActivos(empresaDeSesion(sesion));
 
         // Domain base: supervisors see all; residents see only their own
         let domain: any[] = role === 'supervisor'
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
             'create_date',
             'x_personal',
             'x_equipos',
-            ...(tiposActivos() ? CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id') : []),
+            ...(tipos ? CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id') : []),
         ];
 
         // Consultar directamente a Odoo (sin caché por ahora)
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
                 name: a.cuaderno_id[1],
             } : null,
             createdAt: a.create_date,
-            ...(tiposActivos() ? {
+            ...(tipos ? {
                 tipo: a.tipo || 'avance_diario',
                 asientoCitado: a.asiento_referido_id ? { id: a.asiento_referido_id[0], name: a.asiento_referido_id[1] } : null,
                 plazoLimite: a.plazo_limite || null,
