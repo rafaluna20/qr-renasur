@@ -111,8 +111,14 @@ function HomeContent() {
 
   // Initialize tasks from localStorage
   useEffect(() => {
-    const savedActive = localStorage.getItem("activeTasks");
-    if (savedActive) setActiveTasks(JSON.parse(savedActive));
+    // Un valor viejo o dañado en este navegador no debe tumbar la página (antes JSON.parse lanzaba la excepción).
+    try {
+      const savedActive = localStorage.getItem("activeTasks");
+      const parsed = savedActive ? JSON.parse(savedActive) : [];
+      setActiveTasks(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      localStorage.removeItem("activeTasks");
+    }
   }, []);
 
   // Capture params from URL and sync with localStorage
