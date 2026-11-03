@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Error de Odoo',
-          details: error.message,
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
         },
         { status: 500 }
       );
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: 'Error interno del servidor',
-        details: error instanceof Error ? error.message : String(error),
+        details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined,
       },
       { status: 500 }
     );

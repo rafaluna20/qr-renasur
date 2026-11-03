@@ -13,7 +13,7 @@ import { puedeActuarSobre } from '@/lib/auth/access-rules';
 
 const taskQuerySchema = z.object({
   userId: z.union([z.number(), z.string()]).transform(val => Number(val)),
-  limit: z.number().positive().optional().default(100),
+  limit: z.number().int().positive().max(200).optional().default(100),
 });
 
 export async function POST(req: NextRequest) {

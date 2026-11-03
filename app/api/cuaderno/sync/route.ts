@@ -89,6 +89,27 @@ export async function POST(req: NextRequest) {
                 // Paso 3: Crear el registro en Odoo (en estado draft)
                 // ──────────────────────────────────────────────────────────────
                 // OdooClient.create() siempre retorna un number normalizado
+                // Reintento tras perder la respuesta: el hash (fecha + GPS + ocurrencias) identifica al asiento, así que si ya
+                // existe uno igual del mismo residente, cuaderno y fecha, se devuelve ese en vez de crear otro.
+                if (asiento.security_hash && residenteId) {
+                    const previos = await odoo.searchRead<{ id: number }>(
+                        'obra.cuaderno.asiento',
+                        [
+                            ['cuaderno_id', '=', cuadernoId],
+                            ['residente_id', '=', residenteId],
+                            ['date', '=', asiento.date],
+                            ['x_hash_seguridad', '=', asiento.security_hash],
+                        ],
+                        ['id'],
+                        { limit: 1 },
+                    );
+                    if (previos.length > 0) {
+                        logger.info('Asiento ya existia en Odoo (reintento); no se duplica', { uuid: asiento.offline_uuid, odoo_id: previos[0].id });
+                        results.push({ offline_uuid: asiento.offline_uuid, odoo_id: previos[0].id, status: 'success', duplicado: true });
+                        continue;
+                    }
+                }
+
                 const createdId = await odoo.create('obra.cuaderno.asiento', vals);
 
                 if (!createdId || isNaN(createdId)) {

@@ -13,10 +13,12 @@ const cubetas = new Map<string, Cubeta>();
 const MAX_CUBETAS = 5000;
 
 export const MAX_INTENTOS = 5;
+/** Tope por correo SIN importar la IP: frena al que cambia de IP (o falsea x-forwarded-for) para seguir probando DNI. */
+export const MAX_INTENTOS_POR_CORREO = 10;
 export const VENTANA_MS = 15 * 60 * 1000;
 
 /** Registra un intento y dice si aún está permitido. Devuelve también los segundos que faltan si no lo está. */
-export function registrarIntento(clave: string, ahora = Date.now()): { permitido: boolean; reintentarEn: number } {
+export function registrarIntento(clave: string, ahora = Date.now(), maximo = MAX_INTENTOS): { permitido: boolean; reintentarEn: number } {
   if (cubetas.size > MAX_CUBETAS) {
     for (const [k, c] of cubetas) if (ahora - c.desde > VENTANA_MS) cubetas.delete(k);
   }
@@ -26,7 +28,7 @@ export function registrarIntento(clave: string, ahora = Date.now()): { permitido
     return { permitido: true, reintentarEn: 0 };
   }
   actual.intentos += 1;
-  if (actual.intentos > MAX_INTENTOS) {
+  if (actual.intentos > maximo) {
     return { permitido: false, reintentarEn: Math.ceil((VENTANA_MS - (ahora - actual.desde)) / 1000) };
   }
   return { permitido: true, reintentarEn: 0 };

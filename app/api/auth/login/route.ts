@@ -5,7 +5,7 @@ import type { Rol } from '@/lib/vinculos';
 import { datosDeSesion } from '@/lib/auth/sesion';
 import { setSessionCookie, createSession } from '@/lib/session';
 import { timingSafeEqual } from 'node:crypto';
-import { limpiarIntentos, registrarIntento } from '@/lib/auth/rate-limit';
+import { limpiarIntentos, MAX_INTENTOS_POR_CORREO, registrarIntento } from '@/lib/auth/rate-limit';
 
 const iguales = (a: string, b: string) => {
   const x = Buffer.from(a);
@@ -29,12 +29,17 @@ export async function POST(req: Request) {
 
     // Freno a la fuerza bruta: por dirección IP y por correo.
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'sin-ip';
-    const clave = `${ip}|${String(email).toLowerCase()}`;
+    const correo = String(email).toLowerCase();
+    const clave = `${ip}|${correo}`;
+    const claveCorreo = `correo|${correo}`;
+    // Dos cuentas: por IP+correo y por correo solo (así cambiar de IP no reinicia el conteo).
     const intento = registrarIntento(clave);
-    if (!intento.permitido) {
+    const intentoCorreo = registrarIntento(claveCorreo, Date.now(), MAX_INTENTOS_POR_CORREO);
+    if (!intento.permitido || !intentoCorreo.permitido) {
+      const espera = Math.max(intento.reintentarEn, intentoCorreo.reintentarEn);
       return NextResponse.json(
         { success: false, error: 'Demasiados intentos. Espera unos minutos.' },
-        { status: 429, headers: { 'retry-after': String(intento.reintentarEn) } }
+        { status: 429, headers: { 'retry-after': String(espera) } }
       );
     }
 
@@ -56,17 +61,18 @@ export async function POST(req: Request) {
     );
 
     if (employees.length === 0) {
-      return NextResponse.json({ success: false, error: 'Usuario no encontrado' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Correo o contrasena incorrectos' }, { status: 401 });
     }
 
     const user = employees[0];
 
     // Validar contrasena (DNI)
     if (!iguales(String(user.identification_id ?? ''), String(password))) {
-      return NextResponse.json({ success: false, error: 'Contrasena incorrecta' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Correo o contrasena incorrectos' }, { status: 401 });
     }
 
     limpiarIntentos(clave);
+    limpiarIntentos(claveCorreo);
     const rolCrudo = empresa.obra ? String((user as any)[empresa.campoRol] || '') : '';
     const obraRole: Rol = (['employee', 'resident', 'supervisor', 'admin'] as Rol[]).find((r) => r === rolCrudo) ?? 'employee';
 

@@ -58,7 +58,7 @@ async function checkOdoo(): Promise<CheckStatus> {
     logger.error('Health check: Odoo connection failed', error as Error);
     return {
       status: 'down',
-      message: error instanceof Error ? error.message : 'Error desconocido',
+      message: 'Error de configuracion',
       responseTime: Date.now() - start,
     };
   }
@@ -68,26 +68,17 @@ async function checkOdoo(): Promise<CheckStatus> {
  * Verificar variables de entorno criticas
  */
 function checkEnvironment(): CheckStatus {
-  const requiredVars = [
-    'ODOO_URL',
-    'ODOO_DATABASE',
-    'ODOO_USER_ID',
-    'ODOO_API_KEY',
-  ];
-
-  const missing = requiredVars.filter(v => !process.env[v]);
-
-  if (missing.length > 0) {
-    return {
-      status: 'down',
-      message: `Variables faltantes: ${missing.join(', ')}`,
-    };
+  // Vale tanto EMPRESAS_JSON (varias empresas) como las ODOO_* de siempre: lo decide la lectura de empresas().
+  // No se listan nombres de variables (esta ruta es pública).
+  try {
+    if (empresas().length === 0) return { status: 'down', message: 'Configuracion de Odoo incompleta' };
+  } catch {
+    return { status: 'down', message: 'Configuracion de empresas invalida' };
   }
-
-  return {
-    status: 'up',
-    message: 'Todas las variables de entorno configuradas',
-  };
+  if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.trim().length < 32) {
+    return { status: 'down', message: 'Falta configuracion de sesion' };
+  }
+  return { status: 'up', message: 'Configuracion completa' };
 }
 
 /**
@@ -142,7 +133,7 @@ export async function GET(req: NextRequest) {
     
     return errorResponse(
       'Health check fallo',
-      error instanceof Error ? error.message : undefined,
+      undefined,
       503
     );
   }
