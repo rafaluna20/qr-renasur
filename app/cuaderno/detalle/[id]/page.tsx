@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, use } from 'react';
 import Link from 'next/link';
+import { CATEGORIAS, puedeEmitir, tipoDe } from '@/lib/cuaderno/tipologia';
 import { fechaLegible, normalizarAsiento, registradoConRetraso, type AsientoDetalle } from '@/lib/cuaderno/detalle';
 
 export default function AsientoDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +12,10 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const viewStartTime = useRef<number>(Date.now());
+  const [rolSesion, setRolSesion] = useState<string>('');
+  useEffect(() => {
+    fetch('/api/auth/me', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((d) => setRolSesion(String(d?.user?.role ?? ''))).catch(() => {});
+  }, []);
 
   // Estados traducidos al español
   const stateLabels: Record<string, { label: string; color: string }> = {
@@ -146,6 +151,59 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Columna izquierda - Información principal */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Tipología (fase 2) */}
+            {asiento.tipo && tipoDe(asiento.tipo) && (
+              <section className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center">🗂️ Tipo de asiento</h2>
+                <p className="text-lg text-gray-900">{tipoDe(asiento.tipo)!.etiqueta}</p>
+                <p className="text-xs text-gray-500 mt-1">Categoría {tipoDe(asiento.tipo)!.categoria}: {CATEGORIAS[tipoDe(asiento.tipo)!.categoria]}</p>
+                {asiento.asientoCitado && (
+                  <p className="mt-3 text-sm text-gray-700">
+                    Cita al asiento{' '}
+                    <Link className="font-semibold text-indigo-600 underline" href={`/cuaderno/detalle/${asiento.asientoCitado.id}`}>
+                      {asiento.asientoCitado.name}
+                    </Link>
+                  </p>
+                )}
+                {tipoDe(asiento.tipo)!.requiereRespuesta && (
+                  <div className="mt-4 rounded-lg border p-4 text-sm">
+                    <p className="font-semibold">Plazo de respuesta del supervisor</p>
+                    <p className="mt-1">
+                      {asiento.estadoPlazo === 'atendido' && '✅ Atendido'}
+                      {asiento.estadoPlazo === 'en_plazo' && '🕒 En plazo'}
+                      {asiento.estadoPlazo === 'por_vencer' && '⚠️ Por vencer (menos de 24 horas)'}
+                      {asiento.estadoPlazo === 'vencido' && '⛔ Vencido sin respuesta'}
+                      {asiento.plazoLimite ? ` — límite: ${fechaLegible(asiento.plazoLimite)}` : ''}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">El plazo cuenta desde la firma ({asiento.fechaFirma ? fechaLegible(asiento.fechaFirma) : 'sin firma'}).</p>
+                    {rolSesion === 'supervisor' || rolSesion === 'admin' ? (
+                      asiento.estadoPlazo !== 'atendido' && puedeEmitir(rolSesion, 'absolucion') && (
+                        <Link
+                          href={`/cuaderno/nuevo?ref=${asiento.id}&refName=${encodeURIComponent(asiento.name)}&tipo=absolucion`}
+                          className="mt-3 block w-full text-center bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                          Responder (asiento de absolución)
+                        </Link>
+                      )
+                    ) : null}
+                  </div>
+                )}
+                {asiento.respuestas.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-gray-700">Asientos que lo citan ({asiento.respuestas.length})</p>
+                    <ul className="mt-1 space-y-1 text-sm">
+                      {asiento.respuestas.map((r) => (
+                        <li key={r.id}>
+                          <Link className="text-indigo-600 underline" href={`/cuaderno/detalle/${r.id}`}>{r.name}</Link>
+                          {r.tipo && tipoDe(r.tipo) ? ` — ${tipoDe(r.tipo)!.etiqueta}` : ''} ({r.date})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Información general */}
             <section className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">

@@ -83,6 +83,6 @@ describe('validarAsientoSync', () => {
     expect(validarAsientoSync({ ...base, cuaderno_id: '-1' }, hoy).ok).toBe(false);
   });
   test('rechaza textos desmedidos', () => {
-    expect(validarAsientoSync({ ...base, ocurrencias: 'x'.repeat(5001) }, hoy).ok).toBe(false);
+    expect(validarAsientoSync({ ...base, ocurrencias: 'x'.repeat(7001) }, hoy).ok).toBe(false);
   });
 });

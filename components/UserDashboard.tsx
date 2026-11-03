@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useGeolocation } from "@/hooks";
 import QRScannerModal from "@/components/QRScannerModal";
 import Link from "next/link";
+import { tipoDe } from "@/lib/cuaderno/tipologia";
 import { toast } from "sonner";
 
 function formatHoursMinutes(decimalHours: number): string {
@@ -633,6 +634,29 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             )}
           </div>
 
+          {/* Consultas y solicitudes sin respuesta (solo con la tipología activa) */}
+          {(userRole === 'supervisor' || userRole === 'admin') && (() => {
+            const abiertas = cuadernoAsientos.filter((a: any) => tipoDe(a.tipo)?.requiereRespuesta && a.estadoPlazo !== 'atendido');
+            if (abiertas.length === 0) return null;
+            const vencidas = abiertas.filter((a: any) => a.estadoPlazo === 'vencido').length;
+            return (
+              <div className={`mb-4 rounded-2xl border p-4 text-sm ${vencidas > 0 ? 'border-red-200 bg-red-50 text-red-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+                <p className="font-bold">
+                  {abiertas.length} consulta(s) o solicitud(es) por responder{vencidas > 0 ? ` · ${vencidas} vencida(s)` : ''}
+                </p>
+                <ul className="mt-2 space-y-1 text-xs">
+                  {abiertas.slice(0, 5).map((a: any) => (
+                    <li key={a.id}>
+                      <Link className="underline" href={`/cuaderno/detalle/${a.id}`}>{a.name}</Link>
+                      {' — '}{tipoDe(a.tipo)?.etiqueta}
+                      {a.estadoPlazo === 'vencido' ? ' (vencida)' : a.estadoPlazo === 'por_vencer' ? ' (vence en menos de 24 h)' : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
+
           {/* Stat pills */}
           {filteredStats !== null && (
             <div className="grid grid-cols-4 gap-2 mb-4">
@@ -712,6 +736,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                           <div className="flex flex-col">
                             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">{asiento.name}</span>
                             <span className="text-[10px] text-zinc-500">{asiento.date} {climaEmoji[asiento.clima] || ''}</span>
+                            {tipoDe(asiento.tipo) && <span className="text-[10px] font-semibold text-indigo-600">{tipoDe(asiento.tipo)!.etiqueta}</span>}
                           </div>
                           <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${st.color}`}>{st.label}</span>
                         </div>

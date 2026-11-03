@@ -24,6 +24,20 @@ export function puedeTrabajarAsiento(sesion: SesionMinima | null, residenteId: n
 }
 
 /**
+ * Quién puede LEER un asiento: su autor, el supervisor y el administrador, y el residente lee lo que anota el supervisor
+ * (consultas absueltas, órdenes): sin eso no podría cumplirlas. Un empleado común no lee el cuaderno.
+ */
+export function puedeLeerAsiento(
+  sesion: SesionMinima | null, residenteId: number | null | undefined, supervisorId: number | null | undefined,
+): boolean {
+  if (!sesion) return false;
+  if (puedeTrabajarAsiento(sesion, residenteId)) return true;
+  if (String(sesion.role) === 'resident' && supervisorId != null && Number(supervisorId) > 0) return true;
+  const yo = Number(sesion.id);
+  return Number.isInteger(yo) && yo > 0 && supervisorId != null && Number(supervisorId) === yo;
+}
+
+/**
  * Quién puede ANOTAR en el cuaderno: solo los profesionales acreditados (residente y supervisor; el administrador del
  * sistema también para soporte). Un empleado común no crea asientos. El rol sale de la sesión, no del navegador.
  */

@@ -26,6 +26,14 @@ export interface AsientoDetalle {
   cuaderno: { id: number; name: string } | null;
   attachments: Array<{ id: number; name: string; url: string }>;
   createdAt: string;
+  /** Tipología (solo si el servidor la tiene activa). */
+  tipo: string;
+  asientoCitado: { id: number; name: string } | null;
+  fechaFirma: string;
+  plazoLimite: string;
+  atendido: boolean;
+  estadoPlazo: string;
+  respuestas: Array<{ id: number; name: string; tipo: string; date: string; state: string }>;
 }
 
 const texto = (v: unknown): string => {
@@ -72,6 +80,15 @@ export function normalizarAsiento(crudo: unknown): AsientoDetalle {
       .map((p: any) => ({ id: numero(p?.id) ?? 0, name: texto(p?.name), url: texto(p?.url) }))
       .filter((p: { id: number }) => p.id > 0),
     createdAt: texto(a.createdAt),
+    tipo: texto(a.tipo),
+    asientoCitado: relacion(a.asientoCitado),
+    fechaFirma: texto(a.fechaFirma),
+    plazoLimite: texto(a.plazoLimite),
+    atendido: a.atendido === true,
+    estadoPlazo: texto(a.estadoPlazo),
+    respuestas: (Array.isArray(a.respuestas) ? a.respuestas : [])
+      .map((r: any) => ({ id: numero(r?.id) ?? 0, name: texto(r?.name), tipo: texto(r?.tipo), date: texto(r?.date), state: texto(r?.state) }))
+      .filter((r: { id: number }) => r.id > 0),
   };
 }
 

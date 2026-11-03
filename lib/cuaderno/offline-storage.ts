@@ -20,6 +20,8 @@ export interface AsientoOffline {
     created_at: number;
     synced: boolean;
     security_hash: string;
+    tipo?: string;
+    asiento_referido_id?: string;
     photos?: { name: string; base64: string; mimetype: string }[];
 }
 

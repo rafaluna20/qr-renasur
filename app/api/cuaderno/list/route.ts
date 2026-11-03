@@ -4,6 +4,8 @@ import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
 import { getSessionFromRequest } from '@/lib/session';
 import { ROLES_PRIVILEGIADOS } from '@/lib/auth/access-rules';
 import { NextResponse } from 'next/server';
+import { CAMPOS_TIPOLOGIA, tiposActivos } from '@/lib/cuaderno/config';
+import { estadoPlazo } from '@/lib/cuaderno/tipologia';
 
 export async function POST(req: NextRequest) {
     try {
@@ -35,7 +37,8 @@ export async function POST(req: NextRequest) {
         // Domain base: supervisors see all; residents see only their own
         let domain: any[] = role === 'supervisor'
             ? []
-            : [['residente_id', '=', parseInt(employeeId)]];
+            // El residente ve los suyos y lo que anota el supervisor (respuestas y ordenes que debe cumplir).
+            : ['|', ['residente_id', '=', parseInt(employeeId)], ['supervisor_id', '!=', false]];
 
         logger.debug('Base domain created', { role, baseDomain: domain });
 
@@ -69,6 +72,7 @@ export async function POST(req: NextRequest) {
             'create_date',
             'x_personal',
             'x_equipos',
+            ...(tiposActivos() ? CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id') : []),
         ];
 
         // Consultar directamente a Odoo (sin caché por ahora)
@@ -120,6 +124,13 @@ export async function POST(req: NextRequest) {
                 name: a.cuaderno_id[1],
             } : null,
             createdAt: a.create_date,
+            ...(tiposActivos() ? {
+                tipo: a.tipo || 'avance_diario',
+                asientoCitado: a.asiento_referido_id ? { id: a.asiento_referido_id[0], name: a.asiento_referido_id[1] } : null,
+                plazoLimite: a.plazo_limite || null,
+                atendido: !!a.atendido,
+                estadoPlazo: estadoPlazo(a.tipo, a.plazo_limite || null, !!a.atendido),
+            } : {}),
             preview: {
                 personal: typeof a.x_personal === 'string' ? a.x_personal.substring(0, 50) : '',
                 equipos: typeof a.x_equipos === 'string' ? a.x_equipos.substring(0, 50) : '',

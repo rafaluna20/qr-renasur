@@ -2,7 +2,9 @@ import { getSessionFromRequest } from '@/lib/session';
 import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, logger } from '@/lib';
-import { puedeTrabajarAsiento } from '@/lib/cuaderno/permisos';
+import { puedeLeerAsiento } from '@/lib/cuaderno/permisos';
+import { CAMPOS_TIPOLOGIA, tiposActivos } from '@/lib/cuaderno/config';
+import { estadoPlazo } from '@/lib/cuaderno/tipologia';
 
 /**
  * GET /api/cuaderno/detail/[id]
@@ -102,6 +104,7 @@ async function fetchAsientoDetailFromOdoo(
       'attachment_ids', // IDs de fotos/adjuntos
       'create_date',
       'write_date',
+      ...(tiposActivos() ? CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id') : []),
     ];
 
     const asientos = await odoo.searchRead(
@@ -118,7 +121,8 @@ async function fetchAsientoDetailFromOdoo(
 
     // Solo su residente, o un supervisor/administrador, puede ver el asiento (con su GPS y sus fotos).
     const residenteId = asiento.residente_id ? asiento.residente_id[0] : null;
-    if (!puedeTrabajarAsiento(sesion, residenteId)) return 'prohibido';
+    const supervisorId = asiento.supervisor_id ? asiento.supervisor_id[0] : null;
+    if (!puedeLeerAsiento(sesion, residenteId, supervisorId)) return 'prohibido';
 
     // Obtener adjuntos (fotos) si existen
     let attachments = [];
@@ -139,8 +143,25 @@ async function fetchAsientoDetailFromOdoo(
       }
     }
 
+    // Tipología (solo si el Odoo ya tiene los campos): tipo, asiento citado, plazo y respuestas recibidas.
+    let tipologia: Record<string, unknown> = {};
+    if (tiposActivos()) {
+      const respuestas = await odoo.searchRead<any>(
+        'obra.cuaderno.asiento', [['asiento_referido_id', '=', asientoId]], ['id', 'name', 'tipo', 'date', 'state'], { order: 'id asc', limit: 50 });
+      tipologia = {
+        tipo: asiento.tipo || 'avance_diario',
+        asientoCitado: asiento.asiento_referido_id ? { id: asiento.asiento_referido_id[0], name: asiento.asiento_referido_id[1] } : null,
+        fechaFirma: asiento.fecha_firma || null,
+        plazoLimite: asiento.plazo_limite || null,
+        atendido: !!asiento.atendido,
+        estadoPlazo: estadoPlazo(asiento.tipo, asiento.plazo_limite || null, !!asiento.atendido),
+        respuestas: respuestas.map((r: any) => ({ id: r.id, name: r.name, tipo: r.tipo || '', date: r.date, state: r.state })),
+      };
+    }
+
     // Formatear respuesta
     return {
+      ...tipologia,
       id: asiento.id,
       name: asiento.name || `Asiento #${asiento.id}`,
       date: asiento.date,

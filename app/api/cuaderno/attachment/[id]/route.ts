@@ -2,7 +2,7 @@ import { getSessionFromRequest } from '@/lib/session';
 import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, logger } from '@/lib';
-import { detectarTipoImagen, puedeTrabajarAsiento } from '@/lib/cuaderno/permisos';
+import { detectarTipoImagen, puedeLeerAsiento } from '@/lib/cuaderno/permisos';
 
 /**
  * GET /api/cuaderno/attachment/[id]
@@ -43,10 +43,11 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Adjunto no encontrado' }, { status: 404 });
     }
 
-    const asientos = await odoo.searchRead<{ id: number; residente_id: [number, string] | false }>(
-      'obra.cuaderno.asiento', [['id', '=', meta[0].res_id]], ['residente_id'], { limit: 1 });
+    const asientos = await odoo.searchRead<{ id: number; residente_id: [number, string] | false; supervisor_id: [number, string] | false }>(
+      'obra.cuaderno.asiento', [['id', '=', meta[0].res_id]], ['residente_id', 'supervisor_id'], { limit: 1 });
     const residenteId = asientos[0]?.residente_id ? asientos[0].residente_id[0] : null;
-    if (!puedeTrabajarAsiento({ id: sesion.id, role: sesion.role }, residenteId)) {
+    const supervisorId = asientos[0]?.supervisor_id ? asientos[0].supervisor_id[0] : null;
+    if (!puedeLeerAsiento({ id: sesion.id, role: sesion.role }, residenteId, supervisorId)) {
       return NextResponse.json({ success: false, error: 'No tienes permiso para ver este adjunto' }, { status: 403 });
     }
 

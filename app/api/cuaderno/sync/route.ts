@@ -6,6 +6,8 @@ import { ROLES_PRIVILEGIADOS } from '@/lib/auth/access-rules';
 import { NextResponse } from 'next/server';
 import { MAX_ASIENTOS_POR_LOTE, validarAsientoSync } from '@/lib/validation/asiento-sync';
 import { puedeAnotar } from '@/lib/cuaderno/permisos';
+import { tiposActivos } from '@/lib/cuaderno/config';
+import { TIPO_POR_DEFECTO, puedeEmitir, redaccionValida, requiereEstructura, tipoDe } from '@/lib/cuaderno/tipologia';
 import { sanitizeText } from '@/lib/validation/asiento-validator';
 
 /**
@@ -77,6 +79,28 @@ export async function POST(req: NextRequest) {
                     x_equipos: sanitizeText(asiento.equipos),
                     x_hash_seguridad: asiento.security_hash || '',
                 };
+
+                // Tipologia (solo con el interruptor encendido y el Odoo ya actualizado): el tipo debe corresponder al rol, los
+                // que no son informativos exigen Hecho-Causa-Efecto-Solicitud y las respuestas/aclaraciones deben citar un asiento.
+                if (tiposActivos()) {
+                    const tipo = asiento.tipo || TIPO_POR_DEFECTO;
+                    const def = tipoDe(tipo);
+                    if (!def) throw new Error(`Tipo de asiento desconocido: ${tipo}`);
+                    if (!puedeEmitir(sesion.role, tipo)) throw new Error('Tu rol no puede emitir este tipo de asiento');
+                    if (requiereEstructura(tipo)) {
+                        const v = redaccionValida(asiento.ocurrencias);
+                        if (!v.ok) throw new Error(v.motivo);
+                    }
+                    if (def.requiereReferencia && !asiento.asiento_referido_id) throw new Error('Este tipo de asiento debe citar un asiento anterior');
+                    if (asiento.asiento_referido_id) {
+                        const citado = await odoo.searchRead<{ id: number; cuaderno_id: [number, string] | false }>(
+                            'obra.cuaderno.asiento', [['id', '=', asiento.asiento_referido_id]], ['cuaderno_id'], { limit: 1 });
+                        if (citado.length === 0) throw new Error('El asiento citado no existe');
+                        if (!citado[0].cuaderno_id || citado[0].cuaderno_id[0] !== cuadernoId) throw new Error('El asiento citado es de otro cuaderno');
+                    }
+                    vals.tipo = tipo;
+                    if (asiento.asiento_referido_id) vals.asiento_referido_id = asiento.asiento_referido_id;
+                }
 
                 // Campos opcionales: solo incluir si tienen valor valido
                 if (asiento.latitude) vals.latitude = asiento.latitude;

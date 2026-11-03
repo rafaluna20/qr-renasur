@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveAsientoOffline, syncPendingAsientos } from '@/lib/cuaderno/offline-storage';
+import { CATEGORIAS, TIPO_POR_DEFECTO, componerRedaccion, redaccionValida, requiereEstructura, tipoDe } from '@/lib/cuaderno/tipologia';
 import { getUnsyncedAsientos } from '@/lib/cuaderno/offline-storage';
 import { toast } from 'sonner';
 
@@ -33,6 +34,11 @@ function NuevoAsientoContent() {
     const [isOnline, setIsOnline] = useState(true);
     // Aclaración: un asiento firmado no se modifica; se registra uno nuevo que lo cita (?ref=<id>&refName=<AS-000031>).
     const [aclara, setAclara] = useState<{ id: string; nombre: string } | null>(null);
+    // Tipología (fase 2): solo si el servidor la tiene activa. Cada rol ve únicamente los tipos que puede emitir.
+    const [tiposDisponibles, setTiposDisponibles] = useState<{ clave: string; etiqueta: string; categoria: string }[]>([]);
+    const [tipo, setTipo] = useState(TIPO_POR_DEFECTO);
+    const [redac, setRedac] = useState({ hecho: '', causa: '', efecto: '', solicitud: '' });
+    const estructurado = tiposDisponibles.length > 0 && requiereEstructura(tipo);
 
     // GPS: estado completo con null cuando no disponible (evita falsy 0)
     const [gps, setGps] = useState<GpsState>({
@@ -45,6 +51,21 @@ function NuevoAsientoContent() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // ─── Efectos ──────────────────────────────────────────────────────────────
+
+    useEffect(() => {
+        fetch('/api/cuaderno/config', { cache: 'no-store' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((c) => {
+                if (!c?.tipos || !Array.isArray(c.permitidos) || c.permitidos.length === 0) return;
+                setTiposDisponibles(c.permitidos);
+                const pedido = new URLSearchParams(window.location.search).get('tipo') || '';
+                const hay = (k: string) => c.permitidos.some((t: { clave: string }) => t.clave === k);
+                const referido = new URLSearchParams(window.location.search).get('ref');
+                // Con «ref» se aclara (o se responde, si el supervisor llega con ?tipo=absolucion).
+                setTipo(hay(pedido) ? pedido : referido && hay('aclaracion') ? 'aclaracion' : hay(TIPO_POR_DEFECTO) ? TIPO_POR_DEFECTO : c.permitidos[0].clave);
+            })
+            .catch(() => { /* sin conexión o sin tipología: formulario de siempre */ });
+    }, []);
 
     useEffect(() => {
         const q = new URLSearchParams(window.location.search);
@@ -146,13 +167,28 @@ function NuevoAsientoContent() {
             return;
         }
 
+        // Con tipología: los asientos que no son informativos exigen las cuatro secciones; el texto se guarda compuesto.
+        let textoOcurrencias = ocurrencias;
+        if (estructurado) {
+            textoOcurrencias = componerRedaccion(redac);
+            const v = redaccionValida(textoOcurrencias);
+            if (!v.ok) {
+                toast.error(v.motivo);
+                return;
+            }
+        }
+        if (tiposDisponibles.length > 0 && tipoDe(tipo)?.requiereReferencia && !aclara) {
+            toast.error('Este tipo de asiento debe citar un asiento anterior: ábrelo desde el asiento que vas a responder o aclarar.');
+            return;
+        }
+
         setLoading(true);
 
         try {
             const residenceId = localStorage.getItem('userID');
             const dateStr = new Date().toISOString().split('T')[0];
 
-            const hashInput = `${dateStr}|${gps.latitude ?? 0},${gps.longitude ?? 0}|${ocurrencias}`;
+            const hashInput = `${dateStr}|${gps.latitude ?? 0},${gps.longitude ?? 0}|${textoOcurrencias}`;
             const securityHash = await generateHash(hashInput);
 
             const newAsiento = {
@@ -162,7 +198,7 @@ function NuevoAsientoContent() {
                 clima,
                 personal,
                 equipos,
-                ocurrencias,
+                ocurrencias: textoOcurrencias,
                 // GPS es opcional: si no se obtuvo, se guarda 0 (Odoo acepta Float vacío)
                 latitude: gps.latitude ?? 0,
                 longitude: gps.longitude ?? 0,
@@ -171,6 +207,7 @@ function NuevoAsientoContent() {
                 residente_id: residenceId || undefined,
                 created_at: Date.now(),
                 security_hash: securityHash,
+                ...(tiposDisponibles.length > 0 ? { tipo, asiento_referido_id: aclara?.id } : {}),
             };
 
             // 1. Guardar localmente primero (Offline-First)
@@ -293,6 +330,30 @@ function NuevoAsientoContent() {
                                 </p>
                             </div>
                         )}
+                        {tiposDisponibles.length > 0 && (
+                            <div className="space-y-2 rounded-[30px] border border-zinc-100 bg-zinc-50/50 p-6 dark:border-white/5 dark:bg-white/5">
+                                <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Tipo de asiento</label>
+                                <select
+                                    value={tipo}
+                                    onChange={(e) => setTipo(e.target.value)}
+                                    className="flex h-12 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                >
+                                    {Object.entries(CATEGORIAS).map(([cat, nombre]) => {
+                                        const items = tiposDisponibles.filter((t) => t.categoria === cat);
+                                        return items.length === 0 ? null : (
+                                            <optgroup key={cat} label={`${cat}. ${nombre}`}>
+                                                {items.map((t) => <option key={t.clave} value={t.clave}>{t.etiqueta}</option>)}
+                                            </optgroup>
+                                        );
+                                    })}
+                                </select>
+                                {tipoDe(tipo)?.requiereRespuesta && (
+                                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                                        Esta anotación obliga al supervisor a responder. El plazo cuenta desde la hora en que el servidor reciba la firma.
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         {/* Información Base */}
                         <div className="grid gap-6 rounded-[30px] border border-zinc-100 bg-zinc-50/50 p-6 dark:border-white/5 dark:bg-white/5">
                             {/* Cuaderno */}
@@ -337,6 +398,7 @@ function NuevoAsientoContent() {
                         </div>
 
                         {/* Personal y Equipos */}
+                        {!estructurado && (
                         <div className="grid gap-6 rounded-[30px] border border-zinc-100 bg-zinc-50/50 p-6 dark:border-white/5 dark:bg-white/5">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Resumen de Personal</label>
@@ -361,8 +423,32 @@ function NuevoAsientoContent() {
                                 />
                             </div>
                         </div>
+                        )}
 
                         {/* Ocurrencias */}
+                        {estructurado ? (
+                            <div className="space-y-4 pt-2">
+                                <p className="text-xs text-zinc-500">Redacta con la estructura Hecho, Causa, Efecto y Solicitud (mínimo 10 caracteres cada una).</p>
+                                {([
+                                    ['hecho', 'Hecho', 'Qué ocurrió en la jornada, con claridad y sin ambigüedad.'],
+                                    ['causa', 'Causa', 'Origen o justificación técnica (ej. discrepancia en los planos).'],
+                                    ['efecto', 'Efecto', 'Impacto en el cronograma, la ruta crítica o la calidad.'],
+                                    ['solicitud', 'Solicitud / Conclusión', 'Lo que se pide o se ordena de forma explícita.'],
+                                ] as const).map(([clave, titulo, ayuda]) => (
+                                    <div key={clave} className="space-y-1">
+                                        <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{titulo}</label>
+                                        <textarea
+                                            value={redac[clave]}
+                                            onChange={(e) => setRedac((prev) => ({ ...prev, [clave]: e.target.value }))}
+                                            required
+                                            maxLength={1500}
+                                            placeholder={ayuda}
+                                            className="flex min-h-[90px] w-full resize-none rounded-xl border border-zinc-200 bg-transparent p-3 text-sm transition-all focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:focus:border-white dark:focus:ring-white"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
                         <div className="space-y-2 pt-2">
                             <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                                 Ocurrencias y Trabajos del Día
@@ -375,6 +461,7 @@ function NuevoAsientoContent() {
                                 className="flex min-h-[160px] w-full resize-none rounded-xl border border-zinc-200 bg-transparent p-4 text-sm transition-all focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:focus:border-white dark:focus:ring-white"
                             />
                         </div>
+                        )}
 
                         {/* Status Bar — GPS + Conectividad */}
                         <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-white/5 dark:bg-white/5">

@@ -24,7 +24,7 @@ export const AsientoSyncSchema = z.object({
   clima: z.enum(CLIMAS).optional().default('soleado'),
   personal: texto(500),
   equipos: texto(500),
-  ocurrencias: texto(5000),
+  ocurrencias: texto(7000),
   latitude: opcionalNumero.pipe(z.number().min(-90).max(90).optional()),
   longitude: opcionalNumero.pipe(z.number().min(-180).max(180).optional()),
   gps_accuracy: opcionalNumero.pipe(z.number().min(0).max(100000).optional()),
@@ -32,6 +32,8 @@ export const AsientoSyncSchema = z.object({
   state: z.enum(['draft', 'signed_residente']).optional().default('draft'),
   residente_id: z.preprocess((v) => (v === '' || v === null ? undefined : v), entero.optional()),
   supervisor_id: z.preprocess((v) => (v === '' || v === null ? undefined : v), entero.optional()),
+  tipo: z.string().max(40).optional(),
+  asiento_referido_id: z.preprocess((v) => (v === '' || v === null ? undefined : v), entero.optional()),
 });
 
 export type AsientoSync = z.infer<typeof AsientoSyncSchema>;
