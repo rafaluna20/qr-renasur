@@ -137,7 +137,7 @@ export async function syncPendingAsientos(): Promise<SyncResult> {
             if (asiento.photos && asiento.photos.length > 0 && resultItem?.odoo_id) {
                 for (const photo of asiento.photos) {
                     try {
-                        await fetch('/api/cuaderno/upload_photo', {
+                        const resp = await fetch('/api/cuaderno/upload_photo', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -147,7 +147,12 @@ export async function syncPendingAsientos(): Promise<SyncResult> {
                                 mimetype: photo.mimetype,
                             }),
                         });
+                        if (!resp.ok) {
+                            const detalle = await resp.json().catch(() => ({}));
+                            errorItems.push({ uuid: asiento.offline_uuid, message: `Foto "${photo.name}" no subida: ${detalle?.error || `HTTP ${resp.status}`}` });
+                        }
                     } catch (photoErr) {
+                        errorItems.push({ uuid: asiento.offline_uuid, message: `Foto "${photo.name}" no subida (sin conexion)` });
                         logger.error('Error subiendo foto', photoErr as Error, {
                             uuid: asiento.offline_uuid,
                             odoo_id: resultItem.odoo_id,

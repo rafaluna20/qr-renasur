@@ -51,12 +51,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'No puedes operar sobre otro empleado' }, { status: 403 });
     }
     
-    // CORRECCION: Usar zona horaria de Peru para fecha de hoy
-    const now = new Date();
-    const peruTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const today = `${peruTime.getFullYear()}-${pad(peruTime.getMonth() + 1)}-${pad(peruTime.getDate())}`;
-    
     // Construir dominio de busqueda
     const domain: any[] = [['employee_id', '=', userId]];
     
@@ -94,7 +88,7 @@ export async function POST(req: NextRequest) {
       data: {
         result: attendances,
         count: attendances.length,
-        filter: allHistory ? 'all' : 'today',
+        filter: allHistory ? 'all' : 'last',
       }
     });
 

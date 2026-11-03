@@ -107,7 +107,10 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
   const masterCuadernos = useMemo(() => {
     const unique = new Map<string, string>();
     cuadernoAsientos.forEach(a => {
-      if (a.cuaderno_id) {
+      // La ruta /api/cuaderno/list entrega «cuaderno: {id, name}» (antes se leia cuaderno_id y el filtro nunca aparecia).
+      if (a.cuaderno?.id) {
+        unique.set(String(a.cuaderno.id), a.cuaderno.name || `Cuaderno #${a.cuaderno.id}`);
+      } else if (a.cuaderno_id) {
         const cId = Array.isArray(a.cuaderno_id) ? String(a.cuaderno_id[0]) : String(a.cuaderno_id);
         const cName = Array.isArray(a.cuaderno_id) ? a.cuaderno_id[1] : `Cuaderno #${cId}`;
         unique.set(cId, cName);
@@ -119,7 +122,9 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
   const filteredAsientos = useMemo(() => {
     if (selectedCuadernoFilter === 'all') return cuadernoAsientos;
     return cuadernoAsientos.filter(a => {
-      const cId = Array.isArray(a.cuaderno_id) ? String(a.cuaderno_id[0]) : String(a.cuaderno_id);
+      const cId = a.cuaderno?.id != null
+        ? String(a.cuaderno.id)
+        : Array.isArray(a.cuaderno_id) ? String(a.cuaderno_id[0]) : String(a.cuaderno_id);
       return cId === selectedCuadernoFilter;
     });
   }, [cuadernoAsientos, selectedCuadernoFilter]);

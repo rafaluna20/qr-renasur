@@ -4,7 +4,7 @@ import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
 import {
-  ESTADOS_SIN_ARCHIVOS_NUEVOS,
+  fotoPermitida,
   MAX_FOTO_BYTES,
   bytesDeBase64,
   detectarTipoImagen,
@@ -44,16 +44,16 @@ export async function POST(req: NextRequest) {
         const odoo = getOdooClient(empresaDeSesion(sesion));
 
         // El asiento debe existir, ser del propio residente (o de un supervisor/administrador) y no estar aprobado.
-        const asientos = await odoo.searchRead<{ id: number; state: string; residente_id: [number, string] | false }>(
-            'obra.cuaderno.asiento', [['id', '=', asientoId]], ['state', 'residente_id'], { limit: 1 });
+        const asientos = await odoo.searchRead<{ id: number; state: string; create_date: string; residente_id: [number, string] | false }>(
+            'obra.cuaderno.asiento', [['id', '=', asientoId]], ['state', 'residente_id', 'create_date'], { limit: 1 });
         if (asientos.length === 0) return error(404, 'Asiento no encontrado');
         const asiento = asientos[0];
         const residenteId = asiento.residente_id ? asiento.residente_id[0] : null;
         if (!puedeTrabajarAsiento({ id: sesion.id, role: sesion.role }, residenteId)) {
             return error(403, 'No puedes agregar archivos a este asiento');
         }
-        if (ESTADOS_SIN_ARCHIVOS_NUEVOS.includes(asiento.state)) {
-            return error(409, 'El asiento ya fue aprobado: no admite archivos nuevos');
+        if (!fotoPermitida(asiento.state, asiento.create_date)) {
+            return error(409, 'El asiento ya esta firmado: no admite archivos nuevos. Registra un asiento de aclaracion.');
         }
 
         const vals = {

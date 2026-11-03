@@ -2,6 +2,7 @@
 import {
   bytesDeBase64,
   detectarTipoImagen,
+  fotoPermitida,
   nombreSeguroDeFoto,
   puedeAnotar,
   puedeTrabajarAsiento,
@@ -84,5 +85,23 @@ describe('validarAsientoSync', () => {
   });
   test('rechaza textos desmedidos', () => {
     expect(validarAsientoSync({ ...base, ocurrencias: 'x'.repeat(7001) }, hoy).ok).toBe(false);
+  });
+});
+
+describe('fotoPermitida (un asiento firmado no se modifica)', () => {
+  const ahora = new Date('2026-11-03T15:00:00Z');
+  test('el borrador siempre admite fotos', () => {
+    expect(fotoPermitida('draft', '2020-01-01 00:00:00', ahora)).toBe(true);
+  });
+  test('firmado: solo dentro de la ventana de sincronización (30 min)', () => {
+    expect(fotoPermitida('signed_residente', '2026-11-03 14:45:00', ahora)).toBe(true);
+    expect(fotoPermitida('signed_residente', '2026-11-03 14:20:00', ahora)).toBe(false);
+    expect(fotoPermitida('signed_residente', '2026-11-01 10:00:00', ahora)).toBe(false);
+  });
+  test('aprobado en el sistema anterior, sin fecha o con fecha futura/ilegible: no', () => {
+    expect(fotoPermitida('approved', '2026-11-03 14:59:00', ahora)).toBe(false);
+    expect(fotoPermitida('signed_residente', null, ahora)).toBe(false);
+    expect(fotoPermitida('signed_residente', '2026-11-03 15:30:00', ahora)).toBe(false);
+    expect(fotoPermitida('signed_residente', 'basura', ahora)).toBe(false);
   });
 });

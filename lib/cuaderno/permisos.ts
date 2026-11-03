@@ -98,5 +98,17 @@ export function bytesDeBase64(base64: string): number {
   return Math.floor((limpio.length * 3) / 4) - relleno;
 }
 
-/** Un asiento aprobado ya no admite archivos nuevos. */
-export const ESTADOS_SIN_ARCHIVOS_NUEVOS: readonly string[] = ['approved'];
+/** Ventana tras crear un asiento en la que su autor aún puede adjuntar fotos: la cola offline sube las fotos justo después de sincronizarlo. */
+export const VENTANA_FOTOS_MS = 30 * 60 * 1000;
+
+/**
+ * ¿Se pueden agregar fotos a este asiento? Un borrador sí. Uno firmado ya no se modifica (guía del cuaderno §1.2): solo
+ * dentro de la ventana de sincronización, y nunca si fue aprobado en el sistema anterior.
+ */
+export function fotoPermitida(estado: string, creadoEn: string | null | undefined, ahora: Date = new Date()): boolean {
+  if (estado === 'draft') return true;
+  if (estado === 'approved') return false;
+  if (!creadoEn) return false;
+  const t = new Date(creadoEn.includes('T') ? creadoEn : `${creadoEn.replace(' ', 'T')}Z`).getTime();
+  return !Number.isNaN(t) && ahora.getTime() - t >= 0 && ahora.getTime() - t <= VENTANA_FOTOS_MS;
+}

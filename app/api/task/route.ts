@@ -58,7 +58,13 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.warn('task route: query failed, returning empty.', error instanceof Error ? error.message : error);
-    return NextResponse.json({ success: true, data: { result: [], count: 0 } });
+    const texto = error instanceof Error ? error.message : String(error);
+    // Sin el modulo de horas (hr_timesheet) en ese Odoo no hay nada que listar: eso si es una lista vacia valida.
+    if (/Invalid field|doesn't exist|does not exist|no existe/i.test(texto)) {
+      return NextResponse.json({ success: true, data: { result: [], count: 0 } });
+    }
+    // Cualquier otra falla (Odoo caido, sin permiso) ya no se disfraza de «no hay horas».
+    console.error('task route: consulta fallida:', texto);
+    return NextResponse.json({ success: false, error: 'No se pudieron consultar las horas. Intenta de nuevo.' }, { status: 502 });
   }
 }
