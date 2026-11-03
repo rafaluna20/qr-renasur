@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { fechaLegible, normalizarAsiento } from '@/lib/cuaderno/detalle';
+import { fechaLegible, normalizarAsiento, registradoConRetraso } from '@/lib/cuaderno/detalle';
 
 describe('normalizarAsiento', () => {
   test('un asiento normal pasa igual', () => {
@@ -9,11 +9,10 @@ describe('normalizarAsiento', () => {
       location: { latitude: -12.19, longitude: -76.97, hasGPS: true },
       residente: { id: 7, name: 'Ana' }, supervisor: null, cuaderno: { id: 1, name: 'Obra A' },
       attachments: [{ id: 9, name: 'f.jpg', url: '/api/cuaderno/attachment/9' }],
-      canApprove: true, canReject: true, createdAt: '2026-11-03 14:00:00',
+      createdAt: '2026-11-03 14:00:00',
     });
     expect(a.location).toEqual({ latitude: -12.19, longitude: -76.97, hasGPS: true });
     expect(a.attachments).toHaveLength(1);
-    expect(a.canApprove).toBe(true);
   });
 
   test('GPS que llega como texto ya no tumba la pantalla (antes: toFixed is not a function)', () => {
@@ -50,9 +49,6 @@ describe('normalizarAsiento', () => {
     expect(a.clima).toBe('');
   });
 
-  test('permisos solo valen si vienen en true', () => {
-    expect(normalizarAsiento({ canApprove: 'true', canReject: 1 }).canApprove).toBe(false);
-  });
 });
 
 describe('fechaLegible', () => {
@@ -62,5 +58,19 @@ describe('fechaLegible', () => {
   test('vacía o inválida: guion, nunca «Invalid Date»', () => {
     expect(fechaLegible('')).toBe('—');
     expect(fechaLegible('no es fecha')).toBe('—');
+  });
+});
+
+describe('registradoConRetraso', () => {
+  test('mismo día o hasta 2 días de diferencia: no avisa', () => {
+    expect(registradoConRetraso('2026-11-03', '2026-11-03 18:00:00')).toBe(false);
+    expect(registradoConRetraso('2026-11-03', '2026-11-05 10:00:00')).toBe(false);
+  });
+  test('más de 3 días de diferencia: avisa (sincronización diferida)', () => {
+    expect(registradoConRetraso('2026-11-03', '2026-11-08 10:00:00')).toBe(true);
+  });
+  test('datos vacíos o inválidos: no avisa', () => {
+    expect(registradoConRetraso('', '2026-11-08 10:00:00')).toBe(false);
+    expect(registradoConRetraso('2026-11-03', 'x')).toBe(false);
   });
 });

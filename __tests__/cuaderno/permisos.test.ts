@@ -3,7 +3,7 @@ import {
   bytesDeBase64,
   detectarTipoImagen,
   nombreSeguroDeFoto,
-  puedeRevisarAsiento,
+  puedeAnotar,
   puedeTrabajarAsiento,
 } from '@/lib/cuaderno/permisos';
 import { fechaRazonable, validarAsientoSync } from '@/lib/validation/asiento-sync';
@@ -29,11 +29,13 @@ describe('puedeTrabajarAsiento', () => {
     expect(puedeTrabajarAsiento({ id: 0, role: 'employee' }, 0)).toBe(false);
     expect(puedeTrabajarAsiento({ id: 'x', role: 'employee' }, NaN)).toBe(false);
   });
-  test('revisar (aprobar/observar) es solo de supervisor/administrador', () => {
-    expect(puedeRevisarAsiento({ id: 1, role: 'supervisor' })).toBe(true);
-    expect(puedeRevisarAsiento({ id: 1, role: 'admin' })).toBe(true);
-    expect(puedeRevisarAsiento({ id: 1, role: 'resident' })).toBe(false);
-    expect(puedeRevisarAsiento(null)).toBe(false);
+  test('solo anotan residente, supervisor y administrador (un empleado común no)', () => {
+    expect(puedeAnotar({ id: 1, role: 'resident' })).toBe(true);
+    expect(puedeAnotar({ id: 1, role: 'supervisor' })).toBe(true);
+    expect(puedeAnotar({ id: 1, role: 'admin' })).toBe(true);
+    expect(puedeAnotar({ id: 1, role: 'employee' })).toBe(false);
+    expect(puedeAnotar({ id: 1, role: undefined })).toBe(false);
+    expect(puedeAnotar(null)).toBe(false);
   });
 });
 

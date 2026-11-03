@@ -31,6 +31,8 @@ function NuevoAsientoContent() {
     const [loadingCuadernos, setLoadingCuadernos] = useState(true);
     const [cuadernoId, setCuadernoId] = useState('');
     const [isOnline, setIsOnline] = useState(true);
+    // Aclaración: un asiento firmado no se modifica; se registra uno nuevo que lo cita (?ref=<id>&refName=<AS-000031>).
+    const [aclara, setAclara] = useState<{ id: string; nombre: string } | null>(null);
 
     // GPS: estado completo con null cuando no disponible (evita falsy 0)
     const [gps, setGps] = useState<GpsState>({
@@ -43,6 +45,16 @@ function NuevoAsientoContent() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // ─── Efectos ──────────────────────────────────────────────────────────────
+
+    useEffect(() => {
+        const q = new URLSearchParams(window.location.search);
+        const ref = q.get('ref') || '';
+        const nombre = (q.get('refName') || '').replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 30);
+        if (/^\d{1,9}$/.test(ref)) {
+            setAclara({ id: ref, nombre: nombre || `#${ref}` });
+            setOcurrencias((prev) => prev || `ACLARACIÓN AL ASIENTO ${nombre || `#${ref}`}: `);
+        }
+    }, []);
 
     useEffect(() => {
         // GPS — intentar obtener ubicación pero NO bloquear el formulario
@@ -272,6 +284,15 @@ function NuevoAsientoContent() {
                     </div>
 
                     <form onSubmit={handleSave} className="space-y-8">
+                        {aclara && (
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
+                                <p className="font-bold">Aclaración al asiento {aclara.nombre}</p>
+                                <p className="mt-1 text-xs">
+                                    Un asiento firmado no se modifica ni se elimina. Este será un asiento nuevo que cita al anterior:
+                                    escribe el hecho, la causa, el efecto y lo que solicitas.
+                                </p>
+                            </div>
+                        )}
                         {/* Información Base */}
                         <div className="grid gap-6 rounded-[30px] border border-zinc-100 bg-zinc-50/50 p-6 dark:border-white/5 dark:bg-white/5">
                             {/* Cuaderno */}

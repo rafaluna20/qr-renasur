@@ -14,11 +14,12 @@ function formatHoursMinutes(decimalHours: number): string {
  * Converts an Odoo UTC datetime string ("YYYY-MM-DD HH:MM:SS") to a Lima
  * timezone display string ("HH:MM"). Odoo always stores in UTC.
  */
-function odooToLimaTime(odooDatetime: string | undefined | null): string {
-  if (!odooDatetime) return '--:--';
+function odooToLimaTime(odooDatetime: any): string {
+  if (!odooDatetime || typeof odooDatetime !== 'string') return '--:--';
   // Odoo returns "YYYY-MM-DD HH:MM:SS" without timezone — it is UTC.
   // Replace space with 'T' and append 'Z' so JS parses it as UTC.
   const utcDate = new Date(odooDatetime.replace(' ', 'T') + 'Z');
+  if (isNaN(utcDate.getTime())) return '--:--';
   return utcDate.toLocaleTimeString('es-PE', {
     timeZone: 'America/Lima',
     hour: '2-digit',
@@ -31,7 +32,8 @@ function odooToLimaTime(odooDatetime: string | undefined | null): string {
  * Converts an Odoo UTC datetime string to a Lima-timezone Date object.
  * Use this wherever you need to compare or group dates.
  */
-function odooToLimaDate(odooDatetime: string): Date {
+function odooToLimaDate(odooDatetime: any): Date {
+  if (!odooDatetime || typeof odooDatetime !== 'string') return new Date(NaN);
   return new Date(new Date(odooDatetime.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'America/Lima' }));
 }
 
@@ -50,11 +52,6 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
   const [selectedCuadernoFilter, setSelectedCuadernoFilter] = useState<string>('all');
 
   // Modal actions (Supervisor)
-  const [actionModalOpen, setActionModalOpen] = useState(false);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'resolve'>('approve');
-  const [actionAsientoId, setActionAsientoId] = useState<number | null>(null);
-  const [actionObservacion, setActionObservacion] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
 
   const { getLocation, error: geoError } = useGeolocation();
 
@@ -63,14 +60,18 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
     const byWeek: Record<string, { totalHours: number, records: any[] }> = {};
 
     // Sort by date desc directly using Odoo UTC check_in strings
-    const sortedHistory = [...attendanceHistory].sort((a, b) => a.check_in > b.check_in ? -1 : 1);
+    const sortedHistory = [...attendanceHistory].sort((a, b) => {
+      const aVal = typeof a?.check_in === 'string' ? a.check_in : '';
+      const bVal = typeof b?.check_in === 'string' ? b.check_in : '';
+      return aVal > bVal ? -1 : 1;
+    });
 
     sortedHistory.forEach(record => {
       const limaDate = odooToLimaDate(record.check_in);
       if (isNaN(limaDate.getTime())) return;
 
       let exactHours = Number(record.worked_hours) || 0;
-      if (record.check_in && record.check_out && typeof record.check_out === 'string') {
+      if (record.check_in && typeof record.check_in === 'string' && record.check_out && typeof record.check_out === 'string') {
         const inTime = new Date(record.check_in.replace(' ', 'T') + 'Z').getTime();
         const outTime = new Date(record.check_out.replace(' ', 'T') + 'Z').getTime();
         if (!isNaN(inTime) && !isNaN(outTime)) {
@@ -145,7 +146,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
       });
 
       const data = await response.json();
-      if (response.ok && data.data.result) {
+      if (response.ok && data?.data?.result && Array.isArray(data.data.result)) {
         setAttendanceHistory(data.data.result);
 
         // Get today's date string in Lima timezone (Odoo stores UTC)
@@ -154,6 +155,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
         // Convert each record's UTC check_in to Lima local date before comparing
         const todayRecord = data.data.result.find((r: any) => {
           const limaDate = odooToLimaDate(r.check_in);
+          if (isNaN(limaDate.getTime())) return false;
           return limaDate.toLocaleDateString('en-CA') === todayPeru;
         });
         setAttendanceRecord(todayRecord || null);
@@ -183,50 +185,12 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
         body: JSON.stringify({ employeeId: savedEID, role: savedRole }),
       });
       const data = await response.json();
-      if (response.ok && data.data) {
-        setCuadernoStats(data.data.stats);
-        setCuadernoAsientos(data.data.asientos);
+      if (response.ok && data?.data) {
+        setCuadernoStats(data.data.stats || null);
+        setCuadernoAsientos(Array.isArray(data.data.asientos) ? data.data.asientos : []);
       }
     } catch (e) {
       console.error('Error fetching cuaderno stats', e);
-    }
-  };
-
-  const handleApproveReject = async () => {
-    if (!actionAsientoId) return;
-
-    if ((actionType === 'reject' || actionType === 'resolve') && !actionObservacion.trim()) {
-      toast.warning("Debe escribir un motivo o comentario.");
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      let endpoint = '';
-      if (actionType === 'approve') endpoint = '/api/cuaderno/approve';
-      else if (actionType === 'reject') endpoint = '/api/cuaderno/reject';
-      else if (actionType === 'resolve') endpoint = '/api/cuaderno/resolve';
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: actionAsientoId,
-          observacion: actionObservacion
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchCuadernoStats();
-        setActionModalOpen(false);
-        setActionObservacion('');
-      } else {
-        toast.error("Error: " + data.error);
-      }
-    } catch (e) {
-      toast.error("Error de conexion al guardar la accion.");
-    } finally {
-      setActionLoading(false);
     }
   };
 
@@ -674,7 +638,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
             <div className="grid grid-cols-4 gap-2 mb-4">
               {[
                 { label: 'Total', value: filteredStats.total, color: 'text-zinc-700 dark:text-zinc-200', bg: 'bg-zinc-50 dark:bg-white/5' },
-                { label: 'Pendientes', value: filteredStats.pending, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/10' },
+                { label: 'Firmados', value: filteredStats.pending, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/10' },
                 { label: 'Aprobados', value: filteredStats.approved, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/10' },
                 { label: 'Observados', value: filteredStats.rejected, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/10' },
               ].map(({ label, value, color, bg }) => (
@@ -713,7 +677,7 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
           {cuadernoOpen && filteredStats !== null && (
             <div className="mt-4 border-t border-zinc-50 pt-4 dark:border-white/5">
               <div className="flex items-center rounded-xl bg-zinc-100 p-0.5 dark:bg-white/5 mb-3">
-                {([['all', 'Todos'], ['pending', 'Pendientes'], ['approved', 'Aprobados'], ['rejected', 'Observados']] as const).map(([key, label]) => (
+                {([['all', 'Todos'], ['pending', 'Firmados'], ['approved', 'Aprobados'], ['rejected', 'Observados']] as const).map(([key, label]) => (
                   <button
                     key={key}
                     onClick={() => setCuadernoFilter(key)}
@@ -736,9 +700,9 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                   .map((asiento: any) => {
                     const stateConfig: Record<string, { label: string; color: string }> = {
                       draft: { label: 'Borrador', color: 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800' },
-                      signed_residente: { label: 'Pendiente', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20' },
-                      approved: { label: 'Aprobado', color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
-                      rejected: { label: 'Observado', color: 'text-red-600 bg-red-50 dark:bg-red-900/20' },
+                      signed_residente: { label: 'Firmado', color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
+                      approved: { label: 'Aprobado (anterior)', color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
+                      rejected: { label: 'Observado (anterior)', color: 'text-red-600 bg-red-50 dark:bg-red-900/20' },
                     };
                     const st = stateConfig[asiento.state] || stateConfig.draft;
                     const climaEmoji: Record<string, string> = { soleado: '\u2600\ufe0f', nublado: '\u2601\ufe0f', lluvia_ligera: '\ud83c\udf26\ufe0f', lluvia_fuerte: '\ud83c\udf27\ufe0f' };
@@ -780,47 +744,14 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
                           </Link>
                         </div>
 
-                        {(userRole === 'supervisor' || userRole === 'admin') && asiento.state === 'signed_residente' && (
-                          <div className="flex gap-2 px-3 pb-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActionAsientoId(asiento.id);
-                                setActionType('approve');
-                                setActionObservacion('');
-                                setActionModalOpen(true);
-                              }}
-                              className="flex-1 rounded-lg bg-green-500 py-1.5 text-xs font-bold text-white transition-colors hover:bg-green-600"
+                        {(userRole === 'resident' || userRole === 'supervisor' || userRole === 'admin') && (
+                          <div className="px-3 pb-3">
+                            <Link
+                              href={`/cuaderno/nuevo?ref=${asiento.id}&refName=${encodeURIComponent(String(asiento.name ?? ''))}`}
+                              className="block w-full text-center rounded-lg border border-zinc-200 bg-white py-1.5 text-[11px] font-bold text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-white/10 dark:bg-transparent dark:text-zinc-300"
                             >
-                              Aprobar
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActionAsientoId(asiento.id);
-                                setActionType('reject');
-                                setActionObservacion('');
-                                setActionModalOpen(true);
-                              }}
-                              className="flex-1 rounded-lg bg-red-100 py-1.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-200"
-                            >
-                              Observar
-                            </button>
-                          </div>
-                        )}
-                        {(userRole === 'resident' || userRole === 'admin') && asiento.state === 'rejected' && (
-                          <div className="flex gap-2 p-3 pt-0">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActionAsientoId(asiento.id);
-                                setActionType('resolve');
-                                setActionModalOpen(true);
-                              }}
-                              className="flex-1 rounded-xl bg-blue-500 py-2.5 text-xs font-bold text-white transition-all hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.98]"
-                            >
-                              Subsanar Observacion
-                            </button>
+                              ✍️ Registrar aclaración (asiento nuevo)
+                            </Link>
                           </div>
                         )}
                       </div>
@@ -838,58 +769,6 @@ export default function UserDashboard({ userName, userImage, userRole, onNavigat
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Action Modal (Approve/Reject) */}
-      {actionModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-[30px] bg-white p-6 shadow-2xl dark:bg-zinc-900 border border-zinc-100 dark:border-white/5">
-            <h3 className={`text-xl font-bold ${actionType === 'reject' ? 'text-red-500' : actionType === 'resolve' ? 'text-blue-500' : 'text-green-500'}`}>
-              {actionType === 'approve' ? 'Aprobar Asiento' : actionType === 'resolve' ? 'Subsanar Observacion' : 'Observar Asiento'}
-            </h3>
-            <p className="mt-2 text-sm text-zinc-500">
-              {actionType === 'approve'
-                ? 'El asiento cambiara al estado "Aprobado". Puedes dejar un comentario opcional.'
-                : actionType === 'resolve'
-                  ? 'Firma para subsanar la observacion y devolver el asiento a revision.'
-                  : 'El asiento cambiara al estado "Rechazado". Debes ingresar el motivo de forma obligatoria.'}
-            </p>
-
-            <textarea
-              className="mt-4 w-full rounded-2xl border-0 bg-zinc-50 p-4 text-sm focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:bg-white/5 dark:text-white dark:focus:ring-indigo-400"
-              placeholder={actionType === 'approve' ? 'Comentario (opcional)...' : actionType === 'resolve' ? 'Detalle de validacion o subsanacion...' : 'Motivo de observacion (requerido)...'}
-              rows={4}
-              value={actionObservacion}
-              onChange={(e) => setActionObservacion(e.target.value)}
-            />
-
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setActionModalOpen(false)}
-                className="flex-1 rounded-2xl bg-zinc-100 py-3 text-sm font-bold text-zinc-500 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10"
-                disabled={actionLoading}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleApproveReject}
-                className={`flex-1 rounded-2xl py-3 text-sm font-bold text-white transition-colors flex justify-center items-center ${actionType === 'approve'
-                  ? 'bg-green-500 hover:bg-green-600'
-                  : actionType === 'resolve'
-                    ? 'bg-blue-500 hover:bg-blue-600'
-                    : 'bg-red-500 hover:bg-red-600'
-                  }`}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <svg className="h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                ) : (
-                  'Confirmar'
-                )}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

@@ -23,9 +23,14 @@ export function puedeTrabajarAsiento(sesion: SesionMinima | null, residenteId: n
   return Number.isInteger(yo) && yo > 0 && residenteId != null && Number(residenteId) === yo;
 }
 
-/** Aprobar u observar es solo de supervisor/administrador (el rol sale de la sesión, no del navegador). */
-export function puedeRevisarAsiento(sesion: SesionMinima | null): boolean {
-  return !!sesion && esPrivilegiado(sesion.role);
+/**
+ * Quién puede ANOTAR en el cuaderno: solo los profesionales acreditados (residente y supervisor; el administrador del
+ * sistema también para soporte). Un empleado común no crea asientos. El rol sale de la sesión, no del navegador.
+ */
+export const ROLES_QUE_ANOTAN = ['resident', 'supervisor', 'admin'] as const;
+
+export function puedeAnotar(sesion: SesionMinima | null): boolean {
+  return !!sesion && (ROLES_QUE_ANOTAN as readonly string[]).includes(String(sesion.role ?? ''));
 }
 
 // ── Fotos ───────────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { getSessionFromRequest } from '@/lib/session';
 import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, logger } from '@/lib';
-import { puedeRevisarAsiento, puedeTrabajarAsiento } from '@/lib/cuaderno/permisos';
+import { puedeTrabajarAsiento } from '@/lib/cuaderno/permisos';
 
 /**
  * GET /api/cuaderno/detail/[id]
@@ -196,11 +196,6 @@ async function fetchAsientoDetailFromOdoo(
       // Metadatos
       createdAt: asiento.create_date,
       updatedAt: asiento.write_date,
-      
-      // Permisos/Acciones disponibles (según el rol de la sesión; el servidor lo vuelve a exigir al ejecutar)
-      canApprove: asiento.state === 'signed_residente' && puedeRevisarAsiento(sesion),
-      canReject: asiento.state === 'signed_residente' && puedeRevisarAsiento(sesion),
-      canResolve: asiento.state === 'rejected',
     };
   } catch (error: any) {
     logger.error('Error en fetchAsientoDetailFromOdoo', error as Error);

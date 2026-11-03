@@ -1,17 +1,14 @@
 'use client';
 
 import { useEffect, useState, useRef, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { fechaLegible, normalizarAsiento, type AsientoDetalle } from '@/lib/cuaderno/detalle';
+import { fechaLegible, normalizarAsiento, registradoConRetraso, type AsientoDetalle } from '@/lib/cuaderno/detalle';
 
 export default function AsientoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const router = useRouter();
   const [asiento, setAsiento] = useState<AsientoDetalle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const viewStartTime = useRef<number>(Date.now());
 
@@ -90,68 +87,6 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
     }
   };
 
-  const handleAprobar = async () => {
-    if (!confirm('¿Está seguro de aprobar este asiento?')) return;
-
-    setSubmitting(true);
-    try {
-      const response = await fetch('/api/cuaderno/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: parseInt(resolvedParams.id),
-          observacion: '',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || 'Error al aprobar');
-      }
-
-      alert('✅ Asiento aprobado exitosamente');
-      router.push('/');
-      router.refresh();
-    } catch (err: any) {
-      alert(`❌ Error: ${err.message}`);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleRechazar = async () => {
-    const motivo = prompt('Ingrese el motivo del rechazo:');
-    if (!motivo || motivo.trim() === '') {
-      alert('Debe ingresar un motivo para rechazar');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const response = await fetch('/api/cuaderno/reject', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: parseInt(resolvedParams.id),
-          observacion: motivo.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || 'Error al rechazar');
-      }
-
-      alert('✅ Asiento rechazado exitosamente');
-      router.push('/');
-      router.refresh();
-    } catch (err: any) {
-      alert(`❌ Error: ${err.message}`);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -207,7 +142,7 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
       </header>
 
       {/* Contenido principal */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Columna izquierda - Información principal */}
           <div className="lg:col-span-2 space-y-6">
@@ -362,10 +297,15 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
                   <p className="text-gray-900">#{asiento.id}</p>
                 </div>
                 <div>
-                  <label className="font-semibold text-gray-600">Creado:</label>
+                  <label className="font-semibold text-gray-600">Recibido en el servidor:</label>
                   <p className="text-gray-900">
                     {fechaLegible(asiento.createdAt)}
                   </p>
+                  {registradoConRetraso(asiento.date, asiento.createdAt) && (
+                    <p className="mt-1 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                      Registrado con retraso: el asiento es del {asiento.date}
+                    </p>
+                  )}
                 </div>
                 {asiento.supervisor && (
                   <div>
@@ -374,6 +314,20 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
                   </div>
                 )}
               </div>
+            </section>
+
+            {/* Un asiento firmado no se modifica: se aclara con un asiento nuevo que lo cita */}
+            <section className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">✍️ Aclaración</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Este asiento no se modifica ni se elimina. Para corregir o aclarar algo, registra un asiento nuevo que lo cite.
+              </p>
+              <Link
+                href={`/cuaderno/nuevo?ref=${asiento.id}&refName=${encodeURIComponent(asiento.name)}`}
+                className="block w-full text-center bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Registrar aclaración
+              </Link>
             </section>
 
             {/* Timeline de tiempo de revisión */}
@@ -392,54 +346,6 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
           </div>
         </div>
       </main>
-
-      {/* Footer fijo con botones de acción */}
-      {(asiento.canApprove || asiento.canReject) && asiento.state === 'signed_residente' && (
-        <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {asiento.canReject && (
-                <button
-                  onClick={handleRechazar}
-                  disabled={submitting}
-                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-4 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                >
-                  {submitting ? (
-                    <>
-                      <span className="animate-spin">⏳</span>
-                      <span>Procesando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>❌</span>
-                      <span>Rechazar Asiento</span>
-                    </>
-                  )}
-                </button>
-              )}
-              {asiento.canApprove && (
-                <button
-                  onClick={handleAprobar}
-                  disabled={submitting}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-4 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                >
-                  {submitting ? (
-                    <>
-                      <span className="animate-spin">⏳</span>
-                      <span>Procesando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>✅</span>
-                      <span>Aprobar Asiento</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </footer>
-      )}
 
       {/* Modal de foto ampliada */}
       {selectedPhoto && (

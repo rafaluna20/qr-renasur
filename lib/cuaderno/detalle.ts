@@ -25,8 +25,6 @@ export interface AsientoDetalle {
   supervisor: { id: number; name: string } | null;
   cuaderno: { id: number; name: string } | null;
   attachments: Array<{ id: number; name: string; url: string }>;
-  canApprove: boolean;
-  canReject: boolean;
   createdAt: string;
 }
 
@@ -73,8 +71,6 @@ export function normalizarAsiento(crudo: unknown): AsientoDetalle {
     attachments: (Array.isArray(a.attachments) ? a.attachments : [])
       .map((p: any) => ({ id: numero(p?.id) ?? 0, name: texto(p?.name), url: texto(p?.url) }))
       .filter((p: { id: number }) => p.id > 0),
-    canApprove: a.canApprove === true,
-    canReject: a.canReject === true,
     createdAt: texto(a.createdAt),
   };
 }
@@ -85,4 +81,16 @@ export function fechaLegible(valor: string): string {
   // Odoo entrega «AAAA-MM-DD HH:MM:SS» en UTC.
   const d = new Date(valor.includes('T') ? valor : `${valor.replace(' ', 'T')}Z`);
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('es-PE', { timeZone: 'America/Lima' });
+}
+
+/**
+ * ¿Se registró con retraso? El asiento lleva la fecha del día de la obra (la del celular); el servidor anota cuándo lo
+ * recibió. Si pasaron más de 2 días entre ambos (obra sin señal, sincronización diferida) se avisa, sin rechazarlo.
+ */
+export function registradoConRetraso(fechaAsiento: string, recibidoEnServidor: string): boolean {
+  if (!fechaAsiento || !recibidoEnServidor) return false;
+  const a = new Date(`${fechaAsiento}T00:00:00Z`).getTime();
+  const r = new Date(recibidoEnServidor.includes('T') ? recibidoEnServidor : `${recibidoEnServidor.replace(' ', 'T')}Z`).getTime();
+  if (Number.isNaN(a) || Number.isNaN(r)) return false;
+  return r - a > 3 * 24 * 60 * 60 * 1000;
 }

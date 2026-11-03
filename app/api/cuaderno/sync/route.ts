@@ -5,6 +5,7 @@ import { getSessionFromRequest } from '@/lib/session';
 import { ROLES_PRIVILEGIADOS } from '@/lib/auth/access-rules';
 import { NextResponse } from 'next/server';
 import { MAX_ASIENTOS_POR_LOTE, validarAsientoSync } from '@/lib/validation/asiento-sync';
+import { puedeAnotar } from '@/lib/cuaderno/permisos';
 import { sanitizeText } from '@/lib/validation/asiento-validator';
 
 /**
@@ -24,7 +25,12 @@ export async function POST(req: NextRequest) {
     try {
         const sesion = await getSessionFromRequest(req);
         if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
+        // Solo el residente, el supervisor (y el administrador) anotan en el cuaderno.
+        if (!puedeAnotar({ id: sesion.id, role: sesion.role })) {
+            return NextResponse.json({ success: false, error: 'Tu rol no puede anotar en el cuaderno de obra' }, { status: 403 });
+        }
         const esPrivilegiado = (ROLES_PRIVILEGIADOS as readonly string[]).includes(String(sesion.role));
+        const esSupervisor = String(sesion.role) === 'supervisor';
         const body = await req.json();
         const asientos = body.asientos;
 
@@ -53,9 +59,10 @@ export async function POST(req: NextRequest) {
             try {
                 const cuadernoId = asiento.cuaderno_id;
 
-                // Quien no es supervisor/administrador solo crea asientos a su propio nombre y no asigna supervisor.
-                const residenteId = esPrivilegiado ? asiento.residente_id : Number(sesion.id);
-                const supervisorId = esPrivilegiado ? asiento.supervisor_id : undefined;
+                // Cada profesional anota a su propio nombre: el residente como residente y el supervisor como supervisor
+                // (antes el asiento de un supervisor quedaba a nombre del residente). El administrador puede indicar ambos.
+                const residenteId = esSupervisor ? undefined : esPrivilegiado ? asiento.residente_id : Number(sesion.id);
+                const supervisorId = esSupervisor ? Number(sesion.id) : esPrivilegiado ? asiento.supervisor_id : undefined;
 
                 // CAMPOS CONFIRMADOS en obra.cuaderno.asiento (via fields_get):
                 //   cuaderno_id, date, clima, ocurrencias, latitude, longitude,
@@ -91,12 +98,13 @@ export async function POST(req: NextRequest) {
                 // OdooClient.create() siempre retorna un number normalizado
                 // Reintento tras perder la respuesta: el hash (fecha + GPS + ocurrencias) identifica al asiento, así que si ya
                 // existe uno igual del mismo residente, cuaderno y fecha, se devuelve ese en vez de crear otro.
-                if (asiento.security_hash && residenteId) {
+                const campoAutor = residenteId ? 'residente_id' : supervisorId ? 'supervisor_id' : null;
+                if (asiento.security_hash && campoAutor) {
                     const previos = await odoo.searchRead<{ id: number }>(
                         'obra.cuaderno.asiento',
                         [
                             ['cuaderno_id', '=', cuadernoId],
-                            ['residente_id', '=', residenteId],
+                            [campoAutor, '=', (residenteId ?? supervisorId) as number],
                             ['date', '=', asiento.date],
                             ['x_hash_seguridad', '=', asiento.security_hash],
                         ],
