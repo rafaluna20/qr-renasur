@@ -3,44 +3,7 @@
 import { useEffect, useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-interface AsientoDetalle {
-  id: number;
-  name: string;
-  date: string;
-  clima: string;
-  state: string;
-  personal: string;
-  equipos: string;
-  ocurrencias: string;
-  observacion: string;
-  location: {
-    latitude: number | null;
-    longitude: number | null;
-    hasGPS: boolean;
-  };
-  residente: {
-    id: number;
-    name: string;
-  } | null;
-  supervisor: {
-    id: number;
-    name: string;
-  } | null;
-  cuaderno: {
-    id: number;
-    name: string;
-  } | null;
-  attachments: Array<{
-    id: number;
-    name: string;
-    url: string;
-    thumbnail?: string;
-  }>;
-  canApprove: boolean;
-  canReject: boolean;
-  createdAt: string;
-}
+import { fechaLegible, normalizarAsiento, type AsientoDetalle } from '@/lib/cuaderno/detalle';
 
 export default function AsientoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -99,7 +62,7 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
         throw new Error('Respuesta inválida del servidor');
       }
       
-      setAsiento(data.data);
+      setAsiento(normalizarAsiento(data.data));
       console.log('✓ Asiento set in state');
     } catch (err: any) {
       console.error('💥 Error fetching asiento:', err);
@@ -132,20 +95,18 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
 
     setSubmitting(true);
     try {
-      const viewDuration = (Date.now() - viewStartTime.current) / 1000;
-      
       const response = await fetch('/api/cuaderno/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          asiento_id: parseInt(resolvedParams.id),
-          view_duration_seconds: Math.round(viewDuration),
+          id: parseInt(resolvedParams.id),
+          observacion: '',
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al aprobar');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'Error al aprobar');
       }
 
       alert('✅ Asiento aprobado exitosamente');
@@ -167,21 +128,18 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
 
     setSubmitting(true);
     try {
-      const viewDuration = (Date.now() - viewStartTime.current) / 1000;
-
       const response = await fetch('/api/cuaderno/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          asiento_id: parseInt(resolvedParams.id),
-          motivo: motivo.trim(),
-          view_duration_seconds: Math.round(viewDuration),
+          id: parseInt(resolvedParams.id),
+          observacion: motivo.trim(),
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al rechazar');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'Error al rechazar');
       }
 
       alert('✅ Asiento rechazado exitosamente');
@@ -368,10 +326,10 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                     <p className="text-sm font-semibold text-green-800 mb-2">✓ GPS Verificado</p>
                     <p className="text-xs text-gray-600">
-                      Lat: {asiento.location.latitude?.toFixed(6)}
+                      Lat: {asiento.location.latitude !== null ? asiento.location.latitude.toFixed(6) : ''}
                     </p>
                     <p className="text-xs text-gray-600">
-                      Lon: {asiento.location.longitude?.toFixed(6)}
+                      Lon: {asiento.location.longitude !== null ? asiento.location.longitude.toFixed(6) : ''}
                     </p>
                   </div>
                   {asiento.location.latitude && asiento.location.longitude && (
@@ -406,7 +364,7 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
                 <div>
                   <label className="font-semibold text-gray-600">Creado:</label>
                   <p className="text-gray-900">
-                    {new Date(asiento.createdAt).toLocaleString('es-PE')}
+                    {fechaLegible(asiento.createdAt)}
                   </p>
                 </div>
                 {asiento.supervisor && (

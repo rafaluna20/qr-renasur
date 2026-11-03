@@ -2,6 +2,7 @@ import { getSessionFromRequest } from '@/lib/session';
 import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, logger } from '@/lib';
+import { puedeRevisarAsiento, puedeTrabajarAsiento } from '@/lib/cuaderno/permisos';
 
 /**
  * GET /api/cuaderno/detail/[id]
@@ -30,7 +31,7 @@ export async function GET(
     if (!sesion) return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
 
     // Obtener datos del asiento (del Odoo de la empresa de la sesión)
-    const asientoData = await fetchAsientoDetailFromOdoo(asientoId, empresaDeSesion(sesion));
+    const asientoData = await fetchAsientoDetailFromOdoo(asientoId, empresaDeSesion(sesion), { id: sesion.id, role: sesion.role });
 
     if (!asientoData) {
       logger.warn('Asiento no encontrado', { asientoId });
@@ -38,6 +39,10 @@ export async function GET(
         { success: false, error: 'Asiento no encontrado' },
         { status: 404 }
       );
+    }
+
+    if (asientoData === 'prohibido') {
+      return NextResponse.json({ success: false, error: 'No tienes permiso para ver este asiento' }, { status: 403 });
     }
 
     logger.info('✅ Detalle de asiento obtenido', { 
@@ -58,7 +63,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Error interno del servidor',
+        error: 'Error interno del servidor',
       },
       { status: 500 }
     );
@@ -68,7 +73,11 @@ export async function GET(
 /**
  * Obtiene el detalle completo del asiento desde Odoo
  */
-async function fetchAsientoDetailFromOdoo(asientoId: number, empresa?: string): Promise<any | null> {
+async function fetchAsientoDetailFromOdoo(
+  asientoId: number,
+  empresa: string | undefined,
+  sesion: { id: unknown; role: unknown },
+): Promise<any | null | 'prohibido'> {
   try {
     const odoo = getOdooClient(empresa);
 
@@ -106,6 +115,10 @@ async function fetchAsientoDetailFromOdoo(asientoId: number, empresa?: string): 
     }
 
     const asiento = asientos[0];
+
+    // Solo su residente, o un supervisor/administrador, puede ver el asiento (con su GPS y sus fotos).
+    const residenteId = asiento.residente_id ? asiento.residente_id[0] : null;
+    if (!puedeTrabajarAsiento(sesion, residenteId)) return 'prohibido';
 
     // Obtener adjuntos (fotos) si existen
     let attachments = [];
@@ -184,10 +197,9 @@ async function fetchAsientoDetailFromOdoo(asientoId: number, empresa?: string): 
       createdAt: asiento.create_date,
       updatedAt: asiento.write_date,
       
-      // Permisos/Acciones disponibles
-      // TODO: Validar permisos reales basados en sesión
-      canApprove: asiento.state === 'signed_residente',
-      canReject: asiento.state === 'signed_residente',
+      // Permisos/Acciones disponibles (según el rol de la sesión; el servidor lo vuelve a exigir al ejecutar)
+      canApprove: asiento.state === 'signed_residente' && puedeRevisarAsiento(sesion),
+      canReject: asiento.state === 'signed_residente' && puedeRevisarAsiento(sesion),
       canResolve: asiento.state === 'rejected',
     };
   } catch (error: any) {

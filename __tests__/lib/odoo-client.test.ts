@@ -163,7 +163,9 @@ describe('OdooClient', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(OdooError);
         expect((error as OdooError).code).toBe(500);
-        expect((error as OdooError).message).toContain('AccessError');
+        // El cliente prefiere el mensaje legible de Odoo (data.message); el nombre técnico queda en data.name.
+        expect((error as OdooError).message).toContain('No tienes permisos');
+        expect((error as OdooError).data.name).toContain('AccessError');
       }
     });
 

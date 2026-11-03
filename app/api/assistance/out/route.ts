@@ -47,13 +47,22 @@ export async function POST(req: NextRequest) {
 
     // La salida se marca sobre un registro de asistencia por su id: debe ser del propio empleado (antes se podía cerrar
     // el registro de cualquiera adivinando el número).
-    const registros = await odoo.searchRead<{ id: number; employee_id: [number, string] | false }>(
-      'hr.attendance', [['id', '=', registryId]], ['employee_id'], { limit: 1 });
+    const registros = await odoo.searchRead<{ id: number; employee_id: [number, string] | false; check_out: string | false }>(
+      'hr.attendance', [['id', '=', registryId]], ['employee_id', 'check_out'], { limit: 1 });
     if (registros.length === 0 || !registros[0].employee_id) {
       return NextResponse.json({ success: false, error: 'Registro de asistencia no encontrado' }, { status: 404 });
     }
     if (!puedeActuarSobre({ id: Number(sesion.id), role: String(sesion.role) }, registros[0].employee_id[0])) {
       return NextResponse.json({ success: false, error: 'No puedes operar sobre otro empleado' }, { status: 403 });
+    }
+
+    // La salida se marca UNA sola vez: un registro ya cerrado no se reescribe (antes se podia mover la hora de salida
+    // de dias pasados y inflar las horas trabajadas).
+    if (registros[0].check_out) {
+      return NextResponse.json(
+        { success: false, error: 'Este registro de asistencia ya tiene salida marcada' },
+        { status: 409 }
+      );
     }
 
     const now = new Date();
@@ -122,7 +131,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Error de Odoo',
-          details: error.data ? JSON.stringify(error.data) : error.message,
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
         },
         { status: 500 }
       );
@@ -132,7 +141,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: 'Error interno del servidor',
-        details: error instanceof Error ? error.message : String(error),
+        details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : undefined,
       },
       { status: 500 }
     );

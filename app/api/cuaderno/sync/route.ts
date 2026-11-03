@@ -4,6 +4,8 @@ import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
 import { getSessionFromRequest } from '@/lib/session';
 import { ROLES_PRIVILEGIADOS } from '@/lib/auth/access-rules';
 import { NextResponse } from 'next/server';
+import { MAX_ASIENTOS_POR_LOTE, validarAsientoSync } from '@/lib/validation/asiento-sync';
+import { sanitizeText } from '@/lib/validation/asiento-validator';
 
 /**
  * POST /api/cuaderno/sync
@@ -29,60 +31,52 @@ export async function POST(req: NextRequest) {
         if (!Array.isArray(asientos) || asientos.length === 0) {
             return handleAPIError(new Error('No se enviaron asientos para sincronizar'));
         }
+        if (asientos.length > MAX_ASIENTOS_POR_LOTE) {
+            return NextResponse.json(
+                { success: false, error: `Maximo ${MAX_ASIENTOS_POR_LOTE} asientos por sincronizacion` },
+                { status: 413 }
+            );
+        }
 
         const odoo = getOdooClient(empresaDeSesion(sesion));
         const results = [];
 
-        for (const asiento of asientos) {
+        for (const crudo of asientos) {
+            // Se valida cada asiento por separado: uno malo no tumba a los demas (y se informa por su offline_uuid).
+            const uuidCrudo = typeof crudo?.offline_uuid === 'string' ? crudo.offline_uuid : undefined;
+            const validado = validarAsientoSync(crudo);
+            if (!validado.ok) {
+                results.push({ offline_uuid: uuidCrudo, status: 'error', error: validado.error });
+                continue;
+            }
+            const asiento = validado.asiento;
             try {
-                // ──────────────────────────────────────────────────────────────
-                // Paso 1: Validar datos mínimos requeridos
-                // ──────────────────────────────────────────────────────────────
-                const cuadernoId = parseInt(asiento.cuaderno_id);
-                if (isNaN(cuadernoId) || cuadernoId <= 0) {
-                    throw new Error(`cuaderno_id inválido: "${asiento.cuaderno_id}"`);
-                }
+                const cuadernoId = asiento.cuaderno_id;
 
-                // Quien no es supervisor/administrador solo crea asientos a su propio nombre.
-                const residenteId = esPrivilegiado ? (asiento.residente_id ? parseInt(asiento.residente_id) : undefined) : Number(sesion.id);
-                const supervisorId = asiento.supervisor_id ? parseInt(asiento.supervisor_id) : undefined;
+                // Quien no es supervisor/administrador solo crea asientos a su propio nombre y no asigna supervisor.
+                const residenteId = esPrivilegiado ? asiento.residente_id : Number(sesion.id);
+                const supervisorId = esPrivilegiado ? asiento.supervisor_id : undefined;
 
-                // ──────────────────────────────────────────────────────────────
-                // Paso 2: Construir el dict de valores para create
-                //
                 // CAMPOS CONFIRMADOS en obra.cuaderno.asiento (via fields_get):
                 //   cuaderno_id, date, clima, ocurrencias, latitude, longitude,
                 //   gps_accuracy, residente_id, supervisor_id,
-                //   x_personal, x_equipos, x_hash_seguridad  ← creados en Odoo
-                // ──────────────────────────────────────────────────────────────
+                //   x_personal, x_equipos, x_hash_seguridad  <- creados en Odoo
                 const vals: Record<string, any> = {
                     cuaderno_id: cuadernoId,
                     date: asiento.date,
-                    clima: asiento.clima || 'soleado',
-                    ocurrencias: asiento.ocurrencias || '',
-                    x_personal: asiento.personal || '',
-                    x_equipos: asiento.equipos || '',
+                    clima: asiento.clima,
+                    ocurrencias: sanitizeText(asiento.ocurrencias),
+                    x_personal: sanitizeText(asiento.personal),
+                    x_equipos: sanitizeText(asiento.equipos),
                     x_hash_seguridad: asiento.security_hash || '',
                 };
 
-                // Campos opcionales — solo incluir si tienen valor válido
-                if (asiento.latitude && asiento.latitude !== 0) {
-                    vals.latitude = parseFloat(asiento.latitude);
-                }
-                if (asiento.longitude && asiento.longitude !== 0) {
-                    vals.longitude = parseFloat(asiento.longitude);
-                }
-                if (asiento.gps_accuracy && asiento.gps_accuracy !== 0) {
-                    vals.gps_accuracy = parseFloat(asiento.gps_accuracy);
-                }
-                if (residenteId && !isNaN(residenteId)) {
-                    vals.residente_id = residenteId;
-                }
-                if (supervisorId && !isNaN(supervisorId)) {
-                    vals.supervisor_id = supervisorId;
-                }
-
-
+                // Campos opcionales: solo incluir si tienen valor valido
+                if (asiento.latitude) vals.latitude = asiento.latitude;
+                if (asiento.longitude) vals.longitude = asiento.longitude;
+                if (asiento.gps_accuracy) vals.gps_accuracy = asiento.gps_accuracy;
+                if (residenteId) vals.residente_id = residenteId;
+                if (supervisorId) vals.supervisor_id = supervisorId;
 
                 logger.info('Creando asiento en Odoo', {
                     uuid: asiento.offline_uuid,
