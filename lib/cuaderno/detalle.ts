@@ -34,6 +34,10 @@ export interface AsientoDetalle {
   atendido: boolean;
   estadoPlazo: string;
   respuestas: Array<{ id: number; name: string; tipo: string; date: string; state: string }>;
+  /** Evidencia de la firma: null = sin huella (asiento anterior a la fase 3 o sin firmar). */
+  firmaHash: string;
+  firmadoPor: string;
+  integridadOk: boolean | null;
 }
 
 const texto = (v: unknown): string => {
@@ -86,6 +90,9 @@ export function normalizarAsiento(crudo: unknown): AsientoDetalle {
     plazoLimite: texto(a.plazoLimite),
     atendido: a.atendido === true,
     estadoPlazo: texto(a.estadoPlazo),
+    firmaHash: texto(a.firmaHash),
+    firmadoPor: texto(a.firmadoPor),
+    integridadOk: typeof a.integridadOk === 'boolean' ? a.integridadOk : null,
     respuestas: (Array.isArray(a.respuestas) ? a.respuestas : [])
       .map((r: any) => ({ id: numero(r?.id) ?? 0, name: texto(r?.name), tipo: texto(r?.tipo), date: texto(r?.date), state: texto(r?.state) }))
       .filter((r: { id: number }) => r.id > 0),

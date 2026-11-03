@@ -188,6 +188,15 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
                     ) : null}
                   </div>
                 )}
+                {asiento.firmaHash && (
+                  <div className={`mt-4 rounded-lg border p-4 text-sm ${asiento.integridadOk ? 'border-green-200 bg-green-50 text-green-900' : 'border-red-300 bg-red-50 text-red-900'}`}>
+                    <p className="font-semibold">
+                      {asiento.integridadOk ? '🔒 Integridad verificada' : '⚠️ El contenido NO coincide con la huella de la firma'}
+                    </p>
+                    {asiento.firmadoPor && <p className="mt-1 text-xs">Firmado por {asiento.firmadoPor}</p>}
+                    <p className="mt-1 break-all font-mono text-[11px]">Huella: {asiento.firmaHash.slice(0, 32)}…</p>
+                  </div>
+                )}
                 {asiento.respuestas.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm font-semibold text-gray-700">Asientos que lo citan ({asiento.respuestas.length})</p>

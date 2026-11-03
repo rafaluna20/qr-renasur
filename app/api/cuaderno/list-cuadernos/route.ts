@@ -3,6 +3,7 @@ import { getSessionFromRequest } from '@/lib/session';
 import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest } from 'next/server';
 import { getOdooClient, logger, successResponse, handleAPIError } from '@/lib';
+import { tiposActivos } from '@/lib/cuaderno/config';
 
 export async function GET(req: NextRequest) {
     try {
@@ -11,7 +12,8 @@ export async function GET(req: NextRequest) {
         const odoo = getOdooClient(empresaDeSesion(sesion));
         const cuadernosRaw = await odoo.searchRead(
             'obra.cuaderno',
-            [],
+            // Un cuaderno cerrado no admite asientos nuevos (con la fase 2 activa ya existe el campo de estado).
+            tiposActivos() ? [['state', '!=', 'closed']] : [],
             ['id', 'project_id', 'name', 'display_name'],
             { order: 'id desc' }
         );

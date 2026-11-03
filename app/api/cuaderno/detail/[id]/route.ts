@@ -3,7 +3,7 @@ import { empresaDeSesion } from '@/lib/auth/sesion';
 import { NextRequest, NextResponse } from 'next/server';
 import { getOdooClient, logger } from '@/lib';
 import { puedeLeerAsiento } from '@/lib/cuaderno/permisos';
-import { CAMPOS_TIPOLOGIA, tiposActivos } from '@/lib/cuaderno/config';
+import { CAMPOS_INTEGRIDAD, CAMPOS_TIPOLOGIA, tiposActivos } from '@/lib/cuaderno/config';
 import { estadoPlazo } from '@/lib/cuaderno/tipologia';
 
 /**
@@ -104,7 +104,7 @@ async function fetchAsientoDetailFromOdoo(
       'attachment_ids', // IDs de fotos/adjuntos
       'create_date',
       'write_date',
-      ...(tiposActivos() ? CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id') : []),
+      ...(tiposActivos() ? [...CAMPOS_TIPOLOGIA.filter((c) => c !== 'supervisor_id'), ...CAMPOS_INTEGRIDAD] : []),
     ];
 
     const asientos = await odoo.searchRead(
@@ -155,6 +155,9 @@ async function fetchAsientoDetailFromOdoo(
         plazoLimite: asiento.plazo_limite || null,
         atendido: !!asiento.atendido,
         estadoPlazo: estadoPlazo(asiento.tipo, asiento.plazo_limite || null, !!asiento.atendido),
+        firmaHash: asiento.firma_hash || '',
+        firmadoPor: asiento.firmado_por_id ? asiento.firmado_por_id[1] : '',
+        integridadOk: asiento.firma_hash ? asiento.integridad_ok === true : null,
         respuestas: respuestas.map((r: any) => ({ id: r.id, name: r.name, tipo: r.tipo || '', date: r.date, state: r.state })),
       };
     }

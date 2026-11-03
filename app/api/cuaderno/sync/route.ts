@@ -99,6 +99,9 @@ export async function POST(req: NextRequest) {
                         if (!citado[0].cuaderno_id || citado[0].cuaderno_id[0] !== cuadernoId) throw new Error('El asiento citado es de otro cuaderno');
                     }
                     vals.tipo = tipo;
+                    // Evidencia de la firma tomada del servidor (no del cuerpo que manda el navegador).
+                    vals.firma_ip = (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '').slice(0, 64);
+                    vals.firma_dispositivo = (req.headers.get('user-agent') || '').replace(/[\r\n]+/g, ' ').slice(0, 200);
                     if (asiento.asiento_referido_id) vals.asiento_referido_id = asiento.asiento_referido_id;
                 }
 

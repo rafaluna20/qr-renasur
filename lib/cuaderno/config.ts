@@ -11,3 +11,6 @@ export function tiposActivos(env: Record<string, string | undefined> = process.e
 
 /** Campos extra que se leen de obra.cuaderno.asiento cuando la tipología está activa. */
 export const CAMPOS_TIPOLOGIA = ['tipo', 'asiento_referido_id', 'fecha_firma', 'plazo_limite', 'atendido', 'supervisor_id'] as const;
+
+/** Evidencia de la firma (solo en el detalle de un asiento: la huella se recalcula en Odoo al leerla). */
+export const CAMPOS_INTEGRIDAD = ['firma_hash', 'firmado_por_id', 'integridad_ok', 'firma_ip'] as const;
