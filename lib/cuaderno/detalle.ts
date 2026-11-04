@@ -38,6 +38,9 @@ export interface AsientoDetalle {
   firmaHash: string;
   firmadoPor: string;
   integridadOk: boolean | null;
+  /** 'sso' (billetera) o 'dni'; vacío si el asiento es anterior a este dato. */
+  firmaMetodo: string;
+  selloServidor: boolean;
 }
 
 const texto = (v: unknown): string => {
@@ -93,6 +96,8 @@ export function normalizarAsiento(crudo: unknown): AsientoDetalle {
     firmaHash: texto(a.firmaHash),
     firmadoPor: texto(a.firmadoPor),
     integridadOk: typeof a.integridadOk === 'boolean' ? a.integridadOk : null,
+    firmaMetodo: texto(a.firmaMetodo),
+    selloServidor: a.selloServidor === true,
     respuestas: (Array.isArray(a.respuestas) ? a.respuestas : [])
       .map((r: any) => ({ id: numero(r?.id) ?? 0, name: texto(r?.name), tipo: texto(r?.tipo), date: texto(r?.date), state: texto(r?.state) }))
       .filter((r: { id: number }) => r.id > 0),

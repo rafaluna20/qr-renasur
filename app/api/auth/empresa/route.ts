@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const elegido = typeof empresa === 'string' ? vinculos.find((v) => v.empresa === empresa) : undefined;
   if (!elegido) return NextResponse.json({ success: false, error: 'Empresa no disponible' }, { status: 403, headers: sinCache });
 
-  const identidad = { email: String(origen.email ?? ''), cuenta: String(origen.cuenta ?? '') };
+  const identidad = { email: String(origen.email ?? ''), cuenta: String(origen.cuenta ?? ''), metodo: String(origen.metodo ?? '') };
   await setSessionCookie(datosDeSesion(elegido, vinculos, identidad));
   await clearPendingCookie();
   logger.info('Empresa activa elegida', { empresa: elegido.empresa, empleadoId: elegido.id });

@@ -86,7 +86,7 @@ describe('estado del plazo de respuesta', () => {
 });
 
 describe('interruptor de tipología por empresa', () => {
-  const base = { nombre: 'X', url: 'https://x.test/jsonrpc', database: 'db', userId: 1, apiKey: 'k', obra: true, campoRol: 'x_obra_role', vinculoPorCorreo: false };
+  const base = { nombre: 'X', url: 'https://x.test/jsonrpc', database: 'db', userId: 1, apiKey: 'k', obra: true, campoRol: 'x_obra_role', vinculoPorCorreo: false, firmaSoloSso: false };
   const lista = [
     { id: 'renasur', ...base, cuadernoTipos: true },
     { id: 'akallpa', ...base, cuadernoTipos: false },

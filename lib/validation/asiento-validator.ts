@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import DOMPurify from 'isomorphic-dompurify';
+import { limpiarTexto } from './texto';
 import { globalLogger } from '../observability/structured-logger';
 
 /**
@@ -55,21 +55,21 @@ export const AsientoSchema = z.object({
     .string({ message: 'personal es requerido' })
     .min(5, 'Descripción de personal muy corta (mínimo 5 caracteres)')
     .max(500, 'Descripción de personal muy larga (máximo 500 caracteres)')
-    .transform((str) => DOMPurify.sanitize(str, { ALLOWED_TAGS: [] })),
+    .transform((str) => limpiarTexto(str)),
 
   // Equipos (texto sanitizado)
   equipos: z
     .string({ message: 'equipos es requerido' })
     .min(5, 'Descripción de equipos muy corta (mínimo 5 caracteres)')
     .max(500, 'Descripción de equipos muy larga (máximo 500 caracteres)')
-    .transform((str) => DOMPurify.sanitize(str, { ALLOWED_TAGS: [] })),
+    .transform((str) => limpiarTexto(str)),
 
   // Ocurrencias (texto sanitizado, más detallado)
   ocurrencias: z
     .string({ message: 'ocurrencias es requerido' })
     .min(20, 'Descripción de ocurrencias muy corta (mínimo 20 caracteres)')
     .max(5000, 'Descripción de ocurrencias muy larga (máximo 5000 caracteres)')
-    .transform((str) => DOMPurify.sanitize(str, { ALLOWED_TAGS: [] })),
+    .transform((str) => limpiarTexto(str)),
 
   // GPS - Latitud (opcional, pero validada si existe)
   latitude: z
@@ -173,7 +173,7 @@ export const AsientoActionSchema = z.object({
   observacion: z
     .string()
     .max(1000, 'Observación muy larga (máximo 1000 caracteres)')
-    .transform((str) => DOMPurify.sanitize(str, { ALLOWED_TAGS: [] }))
+    .transform((str) => limpiarTexto(str))
     .optional()
     .default(''),
 });
@@ -190,7 +190,7 @@ export const AsientoResolveSchema = z.object({
     .string()
     .min(10, 'Texto de subsanación muy corto (mínimo 10 caracteres)')
     .max(1000, 'Texto de subsanación muy largo (máximo 1000 caracteres)')
-    .transform((str) => DOMPurify.sanitize(str, { ALLOWED_TAGS: [] })),
+    .transform((str) => limpiarTexto(str)),
 });
 
 /**
@@ -346,11 +346,8 @@ export async function validateSecurityHash(
 /**
  * Sanitiza entrada de texto para prevenir XSS
  */
-export function sanitizeText(text: string, allowTags: string[] = []): string {
-  return DOMPurify.sanitize(text, {
-    ALLOWED_TAGS: allowTags,
-    ALLOWED_ATTR: [],
-  });
+export function sanitizeText(text: string, _allowTags: string[] = []): string {
+  return limpiarTexto(text);
 }
 
 /**

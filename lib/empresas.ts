@@ -32,6 +32,11 @@ export interface Empresa {
    * actualizado esta instalado en el Odoo de ESA empresa. Si no se indica, vale la variable global CUADERNO_TIPOS.
    */
   cuadernoTipos: boolean;
+  /**
+   * Para FIRMAR asientos del cuaderno exige que la sesion venga de la billetera (SSO: correo, contrasena y PIN) y no de
+   * correo + DNI (el DNI no es un secreto). Es identificacion reforzada, no una firma electronica con validez legal.
+   */
+  firmaSoloSso: boolean;
 }
 
 export type EmpresaPublica = Pick<Empresa, 'id' | 'nombre'>;
@@ -76,6 +81,7 @@ export function leerEmpresas(env: Record<string, string | undefined> = process.e
       id: 'principal', nombre: env.EMPRESA_NOMBRE?.trim() || 'Empresa', url: ODOO_URL.replace(/\/+$/, ''),
       database: ODOO_DATABASE, userId: Number(ODOO_USER_ID), apiKey: ODOO_API_KEY, obra: true, campoRol: 'x_obra_role', vinculoPorCorreo: true,
       cuadernoTipos: env.CUADERNO_TIPOS?.trim().toLowerCase() === 'true',
+      firmaSoloSso: false,
     }];
   }
 
@@ -105,6 +111,7 @@ export function leerEmpresas(env: Record<string, string | undefined> = process.e
       obra: e.obra !== false,
       campoRol: campoRol(e.campoRol, id),
       vinculoPorCorreo: e.vinculoPorCorreo === true,
+      firmaSoloSso: e.firmaSoloSso === true,
       cuadernoTipos: typeof e.cuadernoTipos === 'boolean' ? e.cuadernoTipos : env.CUADERNO_TIPOS?.trim().toLowerCase() === 'true',
     };
   });

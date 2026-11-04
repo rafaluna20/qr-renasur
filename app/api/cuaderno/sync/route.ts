@@ -7,8 +7,9 @@ import { NextResponse } from 'next/server';
 import { MAX_ASIENTOS_POR_LOTE, validarAsientoSync } from '@/lib/validation/asiento-sync';
 import { puedeAnotar } from '@/lib/cuaderno/permisos';
 import { tiposActivos } from '@/lib/cuaderno/config';
+import { empresas } from '@/lib/empresas';
 import { TIPO_POR_DEFECTO, puedeEmitir, redaccionValida, requiereEstructura, tipoDe } from '@/lib/cuaderno/tipologia';
-import { sanitizeText } from '@/lib/validation/asiento-validator';
+import { limpiarTexto } from '@/lib/validation/texto';
 
 /**
  * POST /api/cuaderno/sync
@@ -48,6 +49,15 @@ export async function POST(req: NextRequest) {
 
         const odoo = getOdooClient(empresaDeSesion(sesion));
         const tipos = tiposActivos(empresaDeSesion(sesion));
+        const metodoFirma = String(sesion.metodo) === 'sso' ? 'sso' : 'dni';
+        // Identificacion reforzada: con firmaSoloSso la empresa solo admite firmar a quien entro por la billetera.
+        const exigeSso = empresas().find((e) => e.id === empresaDeSesion(sesion))?.firmaSoloSso === true;
+        if (tipos && exigeSso && metodoFirma !== 'sso') {
+            return NextResponse.json(
+                { success: false, error: 'Para firmar asientos entra desde tu billetera (Servicios, Asistencia): el acceso con DNI no basta.' },
+                { status: 403 }
+            );
+        }
         const results = [];
 
         for (const crudo of asientos) {
@@ -75,9 +85,9 @@ export async function POST(req: NextRequest) {
                     cuaderno_id: cuadernoId,
                     date: asiento.date,
                     clima: asiento.clima,
-                    ocurrencias: sanitizeText(asiento.ocurrencias),
-                    x_personal: sanitizeText(asiento.personal),
-                    x_equipos: sanitizeText(asiento.equipos),
+                    ocurrencias: limpiarTexto(asiento.ocurrencias),
+                    x_personal: limpiarTexto(asiento.personal),
+                    x_equipos: limpiarTexto(asiento.equipos),
                     x_hash_seguridad: asiento.security_hash || '',
                 };
 
@@ -100,6 +110,7 @@ export async function POST(req: NextRequest) {
                         if (!citado[0].cuaderno_id || citado[0].cuaderno_id[0] !== cuadernoId) throw new Error('El asiento citado es de otro cuaderno');
                     }
                     vals.tipo = tipo;
+                    vals.firma_metodo = metodoFirma;
                     // Evidencia de la firma tomada del servidor (no del cuerpo que manda el navegador).
                     vals.firma_ip = (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '').slice(0, 64);
                     vals.firma_dispositivo = (req.headers.get('user-agent') || '').replace(/[\r\n]+/g, ' ').slice(0, 200);

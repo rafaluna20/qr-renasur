@@ -194,6 +194,12 @@ export default function AsientoDetallePage({ params }: { params: Promise<{ id: s
                       {asiento.integridadOk ? '🔒 Integridad verificada' : '⚠️ El contenido NO coincide con la huella de la firma'}
                     </p>
                     {asiento.firmadoPor && <p className="mt-1 text-xs">Firmado por {asiento.firmadoPor}</p>}
+                    {asiento.firmaMetodo && (
+                      <p className="mt-1 text-xs">
+                        Identificación: {asiento.firmaMetodo === 'sso' ? 'billetera digital (contraseña y PIN)' : 'correo y DNI'}
+                      </p>
+                    )}
+                    {asiento.selloServidor && <p className="mt-1 text-xs">Sello del servidor válido</p>}
                     <p className="mt-1 break-all font-mono text-[11px]">Huella: {asiento.firmaHash.slice(0, 32)}…</p>
                   </div>
                 )}

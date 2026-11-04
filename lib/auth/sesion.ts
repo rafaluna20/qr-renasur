@@ -9,11 +9,13 @@ export interface DatosSesion {
   empresa: string;
   empresaNombre: string;
   cuenta: string;
+  /** Como se identifico la persona: 'sso' (billetera) o 'dni' (correo y DNI). */
+  metodo: string;
   vinculos: Vinculo[];
 }
 
 export function datosDeSesion(
-  vinculo: Vinculo, todos: Vinculo[], identidad: { email: string; cuenta: string },
+  vinculo: Vinculo, todos: Vinculo[], identidad: { email: string; cuenta: string; metodo?: string },
 ): DatosSesion {
   return {
     id: vinculo.id,
@@ -23,6 +25,7 @@ export function datosDeSesion(
     empresa: vinculo.empresa,
     empresaNombre: vinculo.empresaNombre,
     cuenta: identidad.cuenta,
+    metodo: identidad.metodo === 'sso' ? 'sso' : 'dni',
     vinculos: todos,
   };
 }

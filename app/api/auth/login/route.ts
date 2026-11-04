@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     const sessionPayload = datosDeSesion(
       { empresa: empresa.id, empresaNombre: empresa.nombre, id: user.id, role: obraRole, name: user.name },
       [{ empresa: empresa.id, empresaNombre: empresa.nombre, id: user.id, role: obraRole, name: user.name }],
-      { email: user.work_email, cuenta: '' },
+      { email: user.work_email, cuenta: '', metodo: 'dni' },
     );
 
     // Crear sesion HTTP-Only para web

@@ -158,6 +158,8 @@ async function fetchAsientoDetailFromOdoo(
         firmaHash: asiento.firma_hash || '',
         firmadoPor: asiento.firmado_por_id ? asiento.firmado_por_id[1] : '',
         integridadOk: asiento.firma_hash ? asiento.integridad_ok === true : null,
+        firmaMetodo: asiento.firma_metodo || '',
+        selloServidor: asiento.sello_servidor === true,
         respuestas: respuestas.map((r: any) => ({ id: r.id, name: r.name, tipo: r.tipo || '', date: r.date, state: r.state })),
       };
     }

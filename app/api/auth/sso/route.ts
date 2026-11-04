@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const identidad = { email: canje.usuario.email.trim().toLowerCase(), cuenta: canje.usuario.cuenta };
+    const identidad = { email: canje.usuario.email.trim().toLowerCase(), cuenta: canje.usuario.cuenta, metodo: 'sso' };
     const { vinculos, problemas } = await buscarVinculos(identidad, empresas(), (e) => getOdooClient(e.id));
 
     if (vinculos.length === 0) {
