@@ -45,6 +45,14 @@ const RE_ID = /^[a-z][a-z0-9_-]{1,29}$/;
 
 export class ErrorEmpresas extends Error {}
 
+/**
+ * ¿Esta empresa está en una lista de ids separados por comas (variable de entorno)? Permite encender un interruptor para
+ * una empresa SIN tocar EMPRESAS_JSON, que en Vercel suele ser un secreto de solo escritura (no se puede ver ni editar un campo).
+ */
+function enLista(valor: string | undefined, id: string): boolean {
+  return (valor ?? '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean).includes(id.toLowerCase());
+}
+
 /** Nombre de campo de Odoo permitido (letras, dígitos y guion bajo): entra en consultas, así que no se acepta cualquier texto. */
 function campoRol(valor: unknown, id: string): string {
   if (valor === undefined || valor === null || valor === '') return 'x_obra_role';
@@ -111,8 +119,12 @@ export function leerEmpresas(env: Record<string, string | undefined> = process.e
       obra: e.obra !== false,
       campoRol: campoRol(e.campoRol, id),
       vinculoPorCorreo: e.vinculoPorCorreo === true,
-      firmaSoloSso: e.firmaSoloSso === true,
-      cuadernoTipos: typeof e.cuadernoTipos === 'boolean' ? e.cuadernoTipos : env.CUADERNO_TIPOS?.trim().toLowerCase() === 'true',
+      firmaSoloSso: typeof e.firmaSoloSso === 'boolean' ? e.firmaSoloSso : enLista(env.FIRMA_SOLO_SSO_EMPRESAS, id),
+      // El valor escrito en la entrada de la empresa manda; si no lo hay, la lista CUADERNO_TIPOS_EMPRESAS (p. ej. «renasur»)
+      // y, por ultimo, el interruptor global CUADERNO_TIPOS.
+      cuadernoTipos: typeof e.cuadernoTipos === 'boolean'
+        ? e.cuadernoTipos
+        : enLista(env.CUADERNO_TIPOS_EMPRESAS, id) || env.CUADERNO_TIPOS?.trim().toLowerCase() === 'true',
     };
   });
 }
